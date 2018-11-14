@@ -1,0 +1,27 @@
+{
+  "name": "homebridge-automower",
+  "version": "0.1",
+  "author": "Nicolas Dujardin",
+  "description": "Publish your automower as an homekit accessory",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "license": "ISC",
+  "repository": "github:nicoduj/homebridge-automower",
+  "engines": {
+    "homebridge": ">=0.2.0",
+    "node": ">=0.12.0"
+  },
+  "keywords": [
+    "homebridge-plugin",
+    "automower",
+    "lawn mower",
+    "husqvarna",
+    "automower",
+    "homekit"
+  ],
+  "dependencies": {
+    "request": "^2.65.0"
+  }
+}
