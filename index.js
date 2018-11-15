@@ -6,9 +6,11 @@ module.exports = function (homebridge) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
   homebridge.registerAccessory("homebridge-automower", "HomebridgeAutomower", myAutoMower);
+  
 };
 
 function myAutoMower(log, config) {
+
   this.log = log;
   this.modelInfo = config['model'];
   this.login = config['email'];
@@ -18,13 +20,14 @@ function myAutoMower(log, config) {
   this.headers = {'Accept': 'application/json', 'Content-type': 'application/json'};
   this.imApiUrl =  'https://iam-api.dss.husqvarnagroup.net/api/v3/';
   this.trackApiUrl =  'https://amc-api.dss.husqvarnagroup.net/v1/';
-
+  this.log('myAutoMower');
+  this.authenticate(function(error){if (!error) this.log('Authenticated')}.bind(this));
 }
 
 myAutoMower.prototype = {
   getServices: function () {
     this.services = [];
-    
+    this.log('getServices');
 
     /* Information Service */
 
@@ -52,7 +55,7 @@ myAutoMower.prototype = {
     
     /* Switch Service */
 
-    let switchService = new Service.Switch("Auto/Home");
+    let switchService = new Service.Switch(this.mowerName + " Auto/Park");
     switchService
       .getCharacteristic(Characteristic.On)
         .on('get', this.getSwitchOnCharacteristic.bind(this))
@@ -61,7 +64,7 @@ myAutoMower.prototype = {
     
     /* Fan Service */
 
-    let fanService = new Service.Fan("Mowing");
+    let fanService = new Service.Fan(this.mowerName + " Mowing");
     fanService
       .getCharacteristic(Characteristic.On)
         .on('get', this.getMowerOnCharacteristic.bind(this))
@@ -74,22 +77,36 @@ myAutoMower.prototype = {
     this.switchService = switchService;
     this.fanService = fanService;
 
+    
     return this.services;
 
   },
   getBatteryLevelCharacteristic: function (next) {
+    this.log('getBatteryLevelCharacteristic');
     const me = this;
-    me.authenticate(function () {       
-      me.getMowers(function () { 
-          return next(null,me.mowerStatus.batteryPercent);
+    me.authenticate(function (error) { 
+      if (error)
+        return (next(null,0));
+      else
+      me.getMowers(function (error) { 
+          if (!error && me.mowerStatus) {
+            return next(null,me.mowerStatus.batteryPercent);
+          }
+          else {
+            return next(null,0);
+          }
       })
     });
   },
   getChargingStateCharacteristic: function (next) {
+    this.log('getChargingStateCharacteristic');
     const me = this;
-    me.authenticate(function () {       
-      me.getMowers(function () { 
-        if (me.mowerStatus.connected && me.mowerStatus.batteryPercent < 100) {
+    me.authenticate(function (error) { 
+      if (error)
+        return (next(null,0));
+      else     
+      me.getMowers(function (error) { 
+        if (!error && me.mowerStatus && me.mowerStatus.connected && me.mowerStatus.batteryPercent < 100) {
           return next(null, 1);
         }
         else {
@@ -99,11 +116,14 @@ myAutoMower.prototype = {
     });
   },
   getLowBatteryCharacteristic: function (next) {
-
+    this.log('getLowBatteryCharacteristic');
     const me = this;
-    me.authenticate(function () {       
-      me.getMowers(function () { 
-          if (me.mowerStatus.batteryPercent < 20){
+    me.authenticate(function (error) {  
+      if (error)
+        return (next(null,0));
+      else     
+      me.getMowers(function (error) { 
+          if (!error && me.mowerStatus && me.mowerStatus.batteryPercent < 20){
             return next(null,1);
           }
           else{
@@ -114,11 +134,15 @@ myAutoMower.prototype = {
   },
 
   getSwitchOnCharacteristic: function (next) {
+    this.log('getSwitchOnCharacteristic');
     const me = this;
     var onn = false;
-    me.authenticate(function () {       
-      me.getMowers(function () { 
-          if (me.mowerStatus.mowerStatus.startsWith('OK_') ){
+    me.authenticate(function (error) {   
+      if (error)
+        return (next(null,0));
+      else   
+      me.getMowers(function (error) { 
+          if (!error && me.mowerStatus && me.mowerStatus.mowerStatus.startsWith('OK_') ){
             onn = true;
           }
           return next(null, onn);
@@ -126,7 +150,7 @@ myAutoMower.prototype = {
     });
   },  
   setSwitchOnCharacteristic: function (on, next) {
-
+    this.log('setSwitchOnCharacteristic - ' + on);
     const me = this;
     var command; //PARK, STOP, START
     if(on){
@@ -134,41 +158,56 @@ myAutoMower.prototype = {
     }else{
       command= 'START';
     }
-    me.authenticate(function () {       
-      me.getMowers(function () { 
-        request({
-              url: me.trackApiUrl + 'mowers/' + me.mowerID + '/control',
-              method: 'POST',
-              headers: me.headers,
-              body: {"action": command},
-              json: true
-          }, 
-          function (error, response, body) {
-            console.log(body);
-            if (error) {
-              console.log(error.message);
-              return next(error);
-            }
-            return next();
-          });
+    me.authenticate(function (error) {    
+      if (error)
+        return (next(null,0));
+      else  
+      me.getMowers(function (error) { 
+        if (error)
+          return next(error);
+        else
+          request({
+                url: me.trackApiUrl + 'mowers/' + me.mowerID + '/control',
+                method: 'POST',
+                headers: me.headers,
+                body: {"action": command},
+                json: true
+            }, 
+            function (error, response, body) {
+              if (error) {
+                me.log(error.message);
+                return next(error);
+              }
+              else if (response && response.statusCode !== 200) {
+                me.log('No 200 return ' + response.statusCode);
+                return next(error);
+              }
+              else {
+                return next();
+              }
+            });
         });
       });
   },
 
   getMowerOnCharacteristic: function (next) {
-
+    this.log('getMowerOnCharacteristic');
     const me = this;
     var mowing = 0;
-    me.authenticate(function () {       
-      me.getMowers(function () { 
-          if (me.mowerStatus.mowerStatus == 'OK_CUTTING' ){
-            mowing = 1;
-          }
-          return next(null, mowing);
-      })
+    me.authenticate(function (error) {     
+      if (error)
+        return (next(null,0));
+      else   
+        me.getMowers(function (error) { 
+            if (!error && me.mowerStatus && me.mowerStatus.mowerStatus == 'OK_CUTTING' ){
+              mowing = 1;
+            }
+            return next(null, mowing);
+        })
     });
   },
   setMowerOnCharacteristic: function (on, next) {
+    this.log('setMowerOnCharacteristic -' + on);
     const me = this;
     var command; //PARK, STOP, START
     if(on){
@@ -176,59 +215,93 @@ myAutoMower.prototype = {
     }else{
       command= 'START';
     }
-    me.authenticate(function () {       
-      me.getMowers(function () { 
-        request({
-              url: me.trackApiUrl + 'mowers/' + me.mowerID + '/control',
-              method: 'POST',
-              headers: me.headers,
-              body: {"action": command},
-              json: true
-          }, 
-          function (error, response, body) {
-            console.log(body);
-            if (error) {
-              console.log(error.message);
-              return next(error);
-            }
-            return next();
-          });
+    me.authenticate(function (error) {   
+      if (error)
+        return (next(error));
+      else  
+      me.getMowers(function (error) { 
+        if (error)
+          return (next(error));
+        else
+          request({
+                url: me.trackApiUrl + 'mowers/' + me.mowerID + '/control',
+                method: 'POST',
+                headers: me.headers,
+                body: {"action": command},
+                json: true
+            }, 
+            function (error, response, body) {
+              if (error) {
+                me.log(error.message);
+                return next(error);
+              }            
+              else if (response && response.statusCode !== 200) {
+                me.log('No 200 return ' + response.statusCode);
+                return next(error);
+              }
+              else {
+                return next();
+              }
+            });
         });
       });
   },
 
   authenticate: function(next) {
     const me = this;
-    var jsonBody = {
-      "data": {
-        "attributes": {
-            "password": me.password,
-            "username": me.login
-        },
-      "type": "token"
-      }
-    };
+    var dte = new Date();
 
-    request({
-            url: me.imApiUrl + 'token',
-            method: 'POST',
-            headers: me.headers,
-            body: jsonBody,
-            json: true
-        }, 
-        function (error, response, body) {
-          if (error) {
-            console.log(error.message);
-            return next(error);
-          }
-          me.token = body.data.id;
-          me.tokenProvider = body.data.attributes.provider;
-          me.headers['Authorization'] = 'Bearer ' + me.token;
-          me.headers['Authorization-Provider'] = me.tokenProvider;
-          
-          return next();
-        });
+    if (!me.token || (me.token && me.loginExpires && me.loginExpires < dte )) {
+      me.log('authenticate' );
 
+      var jsonBody = {
+        "data": {
+          "attributes": {
+              "password": me.password,
+              "username": me.login
+          },
+        "type": "token"
+        }
+      };
+
+      request({
+              url: me.imApiUrl + 'token',
+              method: 'POST',
+              headers: me.headers,
+              body: jsonBody,
+              json: true
+          }, 
+          function (error, response, body) {
+            if (error) {
+              me.log(error.message);
+              return next(error);
+            }
+            else if (response && response.statusCode !== 201) {
+              me.log('No 201 return ' + response);
+              return next(error);
+            }
+            else if (body && body.data) {
+              me.token = body.data.id;
+              me.tokenProvider = body.data.attributes.provider;
+              me.loginExpiry = body.data.attributes.expires_in;
+              me.loginExpires = new Date();
+              me.loginExpires.setMilliseconds(me.loginExpires.getMilliseconds() + me.loginExpiry - 30000);
+              me.headers['Authorization'] = 'Bearer ' + me.token;
+              me.headers['Authorization-Provider'] = me.tokenProvider;
+              return next();
+            }
+            else {
+              me.log('No body');
+              return next('No body');
+            } 
+          });
+    }
+    else
+    {
+      me.log('allready authenticate expiration : ' + me.loginExpires + '-' + dte ) ;
+      return next();
+    }
+    
   },
 
   getMowers: function(next){
@@ -241,12 +314,14 @@ myAutoMower.prototype = {
             }, 
             function (error, response, body) {
               if (error) {
-                console.log(error.message);
+                me.log(error.message);
                 return next(error);
               }
-
-              if (body.length > 0)
-              {
+              else if (response && response.statusCode !== 200) {
+                me.log('No 200 return ' + response.statusCode );
+                return next(error);
+              }
+              else if (body.length > 0) {
                 body.forEach(mower => {
                   
                   if (mower.name == me.mowerName)
@@ -256,18 +331,20 @@ myAutoMower.prototype = {
                   }
                 });
               }
+              else {
+                me.log('No body');
+                return next('No body');
+              }
+
               if (me.mowerID) {
                 return next();
               }
-              else
-              {
-                console.log('no automower');
+              else {
+                me.log('no automower');
                 return next('no automower');
               }
             });
-  }
-
-
+  },
 };
 
 //var email = ;
