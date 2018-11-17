@@ -143,7 +143,7 @@ myAutoMower.prototype = {
       else   
       me.getMowers(function (error) { 
           console.log(me.mowerStatus);
-          if (!error && me.mowerStatus && me.mowerStatus.mowerStatus.activity.startsWith('OK_') ){
+          if (!error && me.mowerStatus && me.mowerStatus.mowerStatus.state.startsWith('IN_OPERATION') ){
             onn = true;
           }
           return next(null, onn);
@@ -204,7 +204,7 @@ myAutoMower.prototype = {
         return (next(null,0));
       else   
         me.getMowers(function (error) { 
-            if (!error && me.mowerStatus && me.mowerStatus.mowerStatus == 'OK_CUTTING' ){
+            if (!error && me.mowerStatus && me.mowerStatus.mowerStatus.activity.startsWith('MOWING') ){
               mowing = 1;
             }
             return next(null, mowing);
