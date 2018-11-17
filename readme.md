@@ -1,8 +1,8 @@
 
 # Homebridge-automower
 
-<img src="./IMG_0629.png" width="25%" align="right"> 
-<img src="./IMG_0627.png" width="25%" align="right"> 
+<img src="IMG_0629.png" width="25%" align="right"> 
+<img src="IMG_0627.png" width="25%" align="right"> 
 
 
 Plugin for controlling your automower from Homekit through Homebridge.
