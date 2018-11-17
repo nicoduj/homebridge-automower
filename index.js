@@ -178,7 +178,7 @@ myAutoMower.prototype = {
                 json: true
             }, 
             function (error, response, body) {
-              me.log('Command sent' + command);
+              me.log('Command sent' + commandURL);
               if (error) {
                 me.log(error.message);
                 return next(error);
@@ -239,7 +239,7 @@ myAutoMower.prototype = {
                 json: true
             }, 
             function (error, response, body) {
-              me.log('Command sent' + command);
+              me.log('Command sent' + commandURL);
               if (error) {
                 me.log(error.message);
                 return next(error);
