@@ -19,7 +19,7 @@ function myAutoMower(log, config) {
 
   this.headers = {'Accept': 'application/json', 'Content-type': 'application/json'};
   this.imApiUrl =  'https://iam-api.dss.husqvarnagroup.net/api/v3/';
-  this.trackApiUrl =  'https://amc-api.dss.husqvarnagroup.net/v1/';
+  this.trackApiUrl =  'https://amc-api.dss.husqvarnagroup.net/app/v1/';
   this.log('myAutoMower');
   this.authenticate(function(error){if (!error) this.log('Authenticated')}.bind(this));
 }
@@ -142,7 +142,8 @@ myAutoMower.prototype = {
         return (next(null,0));
       else   
       me.getMowers(function (error) { 
-          if (!error && me.mowerStatus && me.mowerStatus.mowerStatus.startsWith('OK_') ){
+          console.log(me.mowerStatus);
+          if (!error && me.mowerStatus && me.mowerStatus.mowerStatus.activity.startsWith('OK_') ){
             onn = true;
           }
           return next(null, onn);
@@ -152,12 +153,16 @@ myAutoMower.prototype = {
   setSwitchOnCharacteristic: function (on, next) {
     this.log('setSwitchOnCharacteristic - ' + on);
     const me = this;
-    var command; //PARK, STOP, START
+
+    var commandURL;
     if(on){
-      command = 'PARK';
+      //startMainArea
+      commandURL = me.trackApiUrl + 'mowers/' + me.mowerID + '/control/start/';
     }else{
-      command= 'START';
+      //park parkUntilNextStart
+      commandURL= me.trackApiUrl + 'mowers/' + me.mowerID + '/control/park/duration/timer';
     }
+
     me.authenticate(function (error) {    
       if (error)
         return (next(null,0));
@@ -167,13 +172,13 @@ myAutoMower.prototype = {
           return next(error);
         else
           request({
-                url: me.trackApiUrl + 'mowers/' + me.mowerID + '/control',
+                url: commandURL,
                 method: 'POST',
                 headers: me.headers,
-                body: {"action": command},
                 json: true
             }, 
             function (error, response, body) {
+              me.log('Command sent' + command);
               if (error) {
                 me.log(error.message);
                 return next(error);
@@ -209,12 +214,16 @@ myAutoMower.prototype = {
   setMowerOnCharacteristic: function (on, next) {
     this.log('setMowerOnCharacteristic -' + on);
     const me = this;
-    var command; //PARK, STOP, START
+
+    var commandURL;
     if(on){
-      command = 'STOP';
+      //startMainArea
+      commandURL = me.trackApiUrl + 'mowers/' + me.mowerID + '/control/start/';
     }else{
-      command= 'START';
+      //pause
+      commandURL= me.trackApiUrl + 'mowers/' + me.mowerID + '/control/pause';
     }
+
     me.authenticate(function (error) {   
       if (error)
         return (next(error));
@@ -224,13 +233,13 @@ myAutoMower.prototype = {
           return (next(error));
         else
           request({
-                url: me.trackApiUrl + 'mowers/' + me.mowerID + '/control',
+                url: commandURL, 
                 method: 'POST',
                 headers: me.headers,
-                body: {"action": command},
                 json: true
             }, 
             function (error, response, body) {
+              me.log('Command sent' + command);
               if (error) {
                 me.log(error.message);
                 return next(error);
@@ -347,21 +356,11 @@ myAutoMower.prototype = {
   },
 };
 
-//var email = ;
-//var pwd = ;
-//var test = new myRobo(null,{'email':email,'password':pwd,'name':'Rosalie'});
-//test.setMowerOnCharacteristic (false,function(){});
-//test.setSwitchOnCharacteristic (false,function(){});
+//URLS
+//me.trackApiUrl + 'mowers/' + me.mowerID + '/control/start/';
+//me.trackApiUrl + 'mowers/' + me.mowerID + '/control/start/';
+//me.trackApiUrl + 'mowers/' + me.mowerID + '/control/start/override/period'; + JSON String "duration" in body
+//me.trackApiUrl + 'mowers/' + me.mowerID + '/control/pause';
+//me.trackApiUrl + 'mowers/' + me.mowerID + '/control/park/duration/timer';
+//me.trackApiUrl + 'mowers/' + me.mowerID + '/control/park/duration/period'; + JSON String "duration" in body
 
-//test.getBatteryLevelCharacteristic(function(a,b){console.log(b)});
-//test.getChargingStateCharacteristic(function(a,b){console.log(b)});
-//test.getLowBatteryCharacteristic(function(a,b){console.log(b)});
-//test.getMowerOnCharacteristic(function(a,b){console.log(b)});
-//test.getSwitchOnCharacteristic(function(a,b){console.log(b)});
-//test.authenticate(function(){ test.getMowers(function(){console.log(test);}) });
-
-//
-//OK_CUTTING
-//PAUSED
-//OK_SEARCHING
-//PARKED_PARKED_SELECTED

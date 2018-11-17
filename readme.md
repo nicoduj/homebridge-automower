@@ -1,14 +1,22 @@
-**WIP**  
 
 # Homebridge-automower
 
-<img src="" width="30%" align="right"> 
+<img src="./IMG_0629.png" width="25%" align="right"> 
+<img src="./IMG_0627.png" width="25%" align="right"> 
 
-Development ongoing.  AS-IS it _should_ fetch battery percentage, simulate mowing with a fan accessory, and provide an "on/off"-switch for toggling auto/home.  To activate "end of day"-mode, click the fan accessory while it's mowing.
 
-## Usage
+Plugin for controlling your automower from Homekit through Homebridge.
+
+Automower is shown through two devices :
+- One switch that will handle Start / PARK (until next period) function
+- One fan that will handle Start / Pause function and spin when your mower is cutting (and only cutting, not while getting back to its charging station)
+
+The battery percentage / charging status is shown in the detail pane of the fan.
+
 
 `npm install -g homebridge-automower`
+
+## Homebridge configuration
 
 Config as below:  
 
@@ -19,7 +27,14 @@ Config as below:
 		"email": "Your account email",  
 		"password": "Your password"  
 	}  
+
+The name must be the real name of your mower. I think you can add two mowers if needed, but since I have only one I didn't check if it works !
+The model property can be whatever you want.
+
+### Notes  
+
+Based on the following works : 
+- https://github.com/dinmammas/homebridge-robonect
+- https://github.com/chrisz/pyhusmow
   
-
-### Note
-
+I am not a pro in nodejs, so the code is probably a bit messy :)
