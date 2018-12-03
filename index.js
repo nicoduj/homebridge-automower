@@ -20,14 +20,25 @@ function myAutoMower(log, config) {
   this.headers = {'Accept': 'application/json', 'Content-type': 'application/json'};
   this.imApiUrl =  'https://iam-api.dss.husqvarnagroup.net/api/v3/';
   this.trackApiUrl =  'https://amc-api.dss.husqvarnagroup.net/app/v1/';
-  this.log('myAutoMower');
-  this.authenticate(function(error){if (!error) this.log('Authenticated')}.bind(this));
+  this.log('myAutoMower intialized');
+  this.authenticate(function(error)
+    {
+      if (!error) 
+      {
+        this.log('Authenticated'); 
+      }
+      else
+      {
+        this.log('Error authenticating at initilisation - check your config'); 
+      }
+
+    }.bind(this));
 }
 
 myAutoMower.prototype = {
   getServices: function () {
     this.services = [];
-    this.log('getServices');
+    //this.log('getServices');
 
     /* Information Service */
 
@@ -82,7 +93,7 @@ myAutoMower.prototype = {
 
   },
   getBatteryLevelCharacteristic: function (next) {
-    this.log('getBatteryLevelCharacteristic');
+    //this.log('getBatteryLevelCharacteristic');
     const me = this;
     me.authenticate(function (error) { 
       if (error)
@@ -99,7 +110,7 @@ myAutoMower.prototype = {
     });
   },
   getChargingStateCharacteristic: function (next) {
-    this.log('getChargingStateCharacteristic');
+    //this.log('getChargingStateCharacteristic');
     const me = this;
     me.authenticate(function (error) { 
       if (error)
@@ -116,7 +127,7 @@ myAutoMower.prototype = {
     });
   },
   getLowBatteryCharacteristic: function (next) {
-    this.log('getLowBatteryCharacteristic');
+    //this.log('getLowBatteryCharacteristic');
     const me = this;
     me.authenticate(function (error) {  
       if (error)
@@ -134,7 +145,7 @@ myAutoMower.prototype = {
   },
 
   getSwitchOnCharacteristic: function (next) {
-    this.log('getSwitchOnCharacteristic');
+    //this.log('getSwitchOnCharacteristic');
     const me = this;
     var onn = false;
     me.authenticate(function (error) {   
@@ -142,7 +153,7 @@ myAutoMower.prototype = {
         return (next(null,0));
       else   
       me.getMowers(function (error) { 
-          console.log(me.mowerStatus);
+          //console.log(me.mowerStatus);
           if (!error && me.mowerStatus && me.mowerStatus.mowerStatus.state.startsWith('IN_OPERATION') ){
             onn = true;
           }
@@ -151,7 +162,7 @@ myAutoMower.prototype = {
     });
   },  
   setSwitchOnCharacteristic: function (on, next) {
-    this.log('setSwitchOnCharacteristic - ' + on);
+    //this.log('setSwitchOnCharacteristic - ' + on);
     const me = this;
 
     var commandURL;
@@ -196,7 +207,7 @@ myAutoMower.prototype = {
   },
 
   getMowerOnCharacteristic: function (next) {
-    this.log('getMowerOnCharacteristic');
+    //this.log('getMowerOnCharacteristic');
     const me = this;
     var mowing = 0;
     me.authenticate(function (error) {     
@@ -212,7 +223,7 @@ myAutoMower.prototype = {
     });
   },
   setMowerOnCharacteristic: function (on, next) {
-    this.log('setMowerOnCharacteristic -' + on);
+    //this.log('setMowerOnCharacteristic -' + on);
     const me = this;
 
     var commandURL;
@@ -261,7 +272,7 @@ myAutoMower.prototype = {
     var dte = new Date();
 
     if (!me.token || (me.token && me.loginExpires && me.loginExpires < dte )) {
-      me.log('authenticate' );
+      me.log('authenticating' );
 
       var jsonBody = {
         "data": {
@@ -286,7 +297,7 @@ myAutoMower.prototype = {
               return next(error);
             }
             else if (response && response.statusCode !== 201) {
-              me.log('No 201 return ' + response);
+              me.log('No 201 return ' + response.statusCode);
               return next(error);
             }
             else if (body && body.data) {
@@ -307,7 +318,7 @@ myAutoMower.prototype = {
     }
     else
     {
-      me.log('allready authenticate expiration : ' + me.loginExpires + '-' + dte ) ;
+      //me.log('allready authenticate expiration : ' + me.loginExpires + '-' + dte ) ;
       return next();
     }
     
@@ -349,7 +360,7 @@ myAutoMower.prototype = {
                 return next();
               }
               else {
-                me.log('no automower');
+                me.log('no automower detected');
                 return next('no automower');
               }
             });
