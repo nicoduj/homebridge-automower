@@ -2,13 +2,6 @@ var Service, Characteristic;
 const request = require('request');
 const url = require('url');
 
-module.exports = function (homebridge) {
-  Service = homebridge.hap.Service;
-  Characteristic = homebridge.hap.Characteristic;
-  homebridge.registerAccessory("homebridge-automower", "HomebridgeAutomower", myAutoMower);
-  
-};
-
 function myAutoMower(log, config) {
 
   this.log = log;
@@ -25,7 +18,7 @@ function myAutoMower(log, config) {
     {
       if (!error) 
       {
-        this.log('Authenticated'); 
+        this.log.debug('Authenticated'); 
       }
       else
       {
@@ -35,10 +28,18 @@ function myAutoMower(log, config) {
     }.bind(this));
 }
 
+module.exports = function (homebridge) {
+  Service = homebridge.hap.Service;
+  Characteristic = homebridge.hap.Characteristic;
+  homebridge.registerAccessory("homebridge-automower", "HomebridgeAutomower", myAutoMower);
+  
+};
+
+
 myAutoMower.prototype = {
   getServices: function () {
     this.services = [];
-    //this.log('getServices');
+    this.log.debug('getServices');
 
     /* Information Service */
 
@@ -93,7 +94,7 @@ myAutoMower.prototype = {
 
   },
   getBatteryLevelCharacteristic: function (next) {
-    //this.log('getBatteryLevelCharacteristic');
+    this.log.debug('getBatteryLevelCharacteristic');
     const me = this;
     me.authenticate(function (error) { 
       if (error)
@@ -110,7 +111,7 @@ myAutoMower.prototype = {
     });
   },
   getChargingStateCharacteristic: function (next) {
-    //this.log('getChargingStateCharacteristic');
+    this.log.debug('getChargingStateCharacteristic');
     const me = this;
     me.authenticate(function (error) { 
       if (error)
@@ -127,7 +128,7 @@ myAutoMower.prototype = {
     });
   },
   getLowBatteryCharacteristic: function (next) {
-    //this.log('getLowBatteryCharacteristic');
+    this.log.debug('getLowBatteryCharacteristic');
     const me = this;
     me.authenticate(function (error) {  
       if (error)
@@ -145,7 +146,7 @@ myAutoMower.prototype = {
   },
 
   getSwitchOnCharacteristic: function (next) {
-    //this.log('getSwitchOnCharacteristic');
+    this.log.debug('getSwitchOnCharacteristic');
     const me = this;
     var onn = false;
     me.authenticate(function (error) {   
@@ -153,7 +154,7 @@ myAutoMower.prototype = {
         return (next(null,0));
       else   
       me.getMowers(function (error) { 
-          //console.log(me.mowerStatus);
+          me.log.debug('Mower status :' + me.mowerStatus);
           if (!error && me.mowerStatus && me.mowerStatus.mowerStatus.state.startsWith('IN_OPERATION') ){
             onn = true;
           }
@@ -162,7 +163,7 @@ myAutoMower.prototype = {
     });
   },  
   setSwitchOnCharacteristic: function (on, next) {
-    //this.log('setSwitchOnCharacteristic - ' + on);
+    this.log.debug('setSwitchOnCharacteristic - ' + on);
     const me = this;
 
     var commandURL;
@@ -189,7 +190,7 @@ myAutoMower.prototype = {
                 json: true
             }, 
             function (error, response, body) {
-              me.log('Command sent' + commandURL);
+              me.log.debug('Command sent' + commandURL);
               if (error) {
                 me.log(error.message);
                 return next(error);
@@ -207,7 +208,7 @@ myAutoMower.prototype = {
   },
 
   getMowerOnCharacteristic: function (next) {
-    //this.log('getMowerOnCharacteristic');
+    this.log.debug('getMowerOnCharacteristic');
     const me = this;
     var mowing = 0;
     me.authenticate(function (error) {     
@@ -223,7 +224,7 @@ myAutoMower.prototype = {
     });
   },
   setMowerOnCharacteristic: function (on, next) {
-    //this.log('setMowerOnCharacteristic -' + on);
+    this.log.debug('setMowerOnCharacteristic -' + on);
     const me = this;
 
     var commandURL;
@@ -250,7 +251,7 @@ myAutoMower.prototype = {
                 json: true
             }, 
             function (error, response, body) {
-              me.log('Command sent' + commandURL);
+              me.log.debug('Command sent' + commandURL);
               if (error) {
                 me.log(error.message);
                 return next(error);
@@ -272,7 +273,7 @@ myAutoMower.prototype = {
     var dte = new Date();
 
     if (!me.token || (me.token && me.loginExpires && me.loginExpires < dte )) {
-      me.log('authenticating' );
+      me.log.debug('authenticating' );
 
       var jsonBody = {
         "data": {
@@ -318,7 +319,7 @@ myAutoMower.prototype = {
     }
     else
     {
-      //me.log('allready authenticate expiration : ' + me.loginExpires + '-' + dte ) ;
+      me.log.debug('allready authenticate expiration : ' + me.loginExpires + '-' + dte ) ;
       return next();
     }
     
