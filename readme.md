@@ -3,7 +3,7 @@
 <img src="https://user-images.githubusercontent.com/19813688/48661529-729f9600-ea73-11e8-8051-37adfd687922.PNG" width="25%" align="right"> 
 <img src="https://user-images.githubusercontent.com/19813688/48661518-4c79f600-ea73-11e8-9c2f-45a8958106a5.PNG" width="25%" align="right">
 
-Plugin for controlling your [automower](https://www.husqvarna.com/fr/produits/robots-tondeuses/) from [HomeBridge](https://github.com/nfarina/homebridge) through Homebridge.
+Plugin for controlling your [automower](https://www.husqvarna.com/fr/produits/robots-tondeuses/) from [Husqvarna](https://www.husqvarna.com/f) through [HomeBridge](https://github.com/nfarina/homebridge) .
 
 Each Automower is shown through two services :
 
