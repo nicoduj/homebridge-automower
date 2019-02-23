@@ -31,10 +31,28 @@ Config as below:
 The name must be the real name of your mower. I think you can add two mowers if needed, but since I have only one I didn't check if it works !
 The model property can be whatever you want.
 
-### Notes  
+## Inspiration
 
-Based on the following works : 
-- https://github.com/dinmammas/homebridge-robonect
-- https://github.com/chrisz/pyhusmow
+Many thanks to  : 
+- [dinmammas] for  plugin inspiration
+- [chrisz] for automower api samples
+- every tester / contributor that test, and give feedback in any way !
+
+[dinmammas]: https://github.com/dinmammas/homebridge-robonect
+[chrisz]: https://github.com/chrisz/pyhusmow
   
-I am not a pro in nodejs, so the code is probably a bit messy :)
+## Donating
+Support this project and [others by nicoduj][nicoduj-projects] via [PayPal][paypal-nicoduj].
+
+[![Support via PayPal][paypal-button]][paypal-nicoduj]
+
+[nicoduj-projects]: https://github.com/nicoduj/
+[paypal-button]: https://img.shields.io/badge/Donate-PayPal-green.svg
+[paypal-nicoduj]: https://www.paypal.me/nicoduj/2.50
+
+## License
+As of Dec 01 2018, Nicolas Dujardin has released this repository and its contents to the public domain.
+
+It has been released under the [UNLICENSE][].
+
+[UNLICENSE]: LICENSE
