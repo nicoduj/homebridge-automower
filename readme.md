@@ -22,8 +22,8 @@ Config as below:
 "platforms": [
   {
     "platform": "HomebridgeAutomower",
-	"email": "toto@titi.com",
-	"password": "toto"
+	  "email": "toto@titi.com",
+	  "password": "toto"
   }
 ]
 ```
