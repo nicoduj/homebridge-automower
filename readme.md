@@ -36,6 +36,8 @@ Fields:
 
 ## Changelog
 
+- 1.1.1
+  - [FIX] status not retrieved
 - 1.1.0
   - [NEW] #1 Moves to platform mode, so that automower discovery is auto. No need anymore to set the name / model . **CONFIG MUST BE CHANGED**
 

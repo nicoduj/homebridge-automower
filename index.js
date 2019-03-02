@@ -92,7 +92,7 @@ myAutoMowerPlatform.prototype = {
               myMowerAccessory.model = mowerModel;
               myMowerAccessory.manufacturer = 'Husqvarna Group';
               myMowerAccessory.serialNumber = mowerSeriaNumber;
-
+              myMowerAccessory.mowerID = mowerSeriaNumber;
               this.foundAccessories.push(myMowerAccessory);
             }
 
@@ -278,8 +278,20 @@ myAutoMowerPlatform.prototype = {
         callback(undefined, mowing);
       } else
         this.getMowers(result => {
+          this.log.debug('INFO - mowers result : ' + JSON.stringify(result));
           if (result && result instanceof Array && result.length > 0) {
             for (let s = 0; s < result.length; s++) {
+              this.log.debug(
+                'INFO - mower id : ' +
+                  result[s].id +
+                  '/' +
+                  homebridgeAccessory.mowerID
+              );
+              this.log.debug('INFO - mower status : ' + result[s].status);
+              this.log.debug(
+                'INFO - mower activity : ' +
+                  result[s].status.mowerStatus.activity
+              );
               if (
                 result[s].id === homebridgeAccessory.mowerID &&
                 result[s].status &&
@@ -435,10 +447,10 @@ myAutoMowerPlatform.prototype = {
       },
       function(error, response, body) {
         if (error) {
-          that.log(error.message);
+          that.log('ERROR - retrieving mower - ' + error.message);
           rcallback(error);
         } else if (response && response.statusCode !== 200) {
-          that.log('No 200 return ' + response.statusCode);
+          that.log('ERROR - No 200 return ' + response.statusCode);
           callback(error);
         } else if (body.length > 0) {
           let mowers = [];
@@ -447,7 +459,7 @@ myAutoMowerPlatform.prototype = {
           });
           callback(mowers);
         } else {
-          that.log('No body');
+          that.log('ERROR - No body returned from Automower API');
           callback('No body');
         }
       }
