@@ -110,6 +110,13 @@ myAutoMowerPlatform.prototype = {
     });
   },
 
+  logResult(result) {
+    this.log.debug('INFO - mower status : ' + JSON.stringify(result.status));
+    this.log.debug(
+      'INFO - mower activity : ' + result.status.mowerStatus.activity
+    );
+  },
+
   getBatteryLevelCharacteristic: function(homebridgeAccessory, callback) {
     this.log.debug('getBatteryLevelCharacteristic');
     var percent = 0;
@@ -120,6 +127,7 @@ myAutoMowerPlatform.prototype = {
         this.getMowers(result => {
           if (result && result instanceof Array && result.length > 0) {
             for (let s = 0; s < result.length; s++) {
+              this.logResult(result[s]);
               if (result[s].id === homebridgeAccessory.mowerID) {
                 percent = result[s].status.batteryPercent;
                 break;
@@ -142,11 +150,13 @@ myAutoMowerPlatform.prototype = {
         this.getMowers(result => {
           if (result && result instanceof Array && result.length > 0) {
             for (let s = 0; s < result.length; s++) {
+              this.logResult(result[s]);
               if (
                 result[s].id === homebridgeAccessory.mowerID &&
                 result[s].status &&
                 result[s].status.connected &&
-                result[s].batteryPercent < 100
+                (result[s].batteryPercent < 100 ||
+                  result[s].status.mowerStatus.state.startsWith('CHARGING'))
               ) {
                 charging = 1;
                 break;
@@ -167,6 +177,7 @@ myAutoMowerPlatform.prototype = {
         this.getMowers(result => {
           if (result && result instanceof Array && result.length > 0) {
             for (let s = 0; s < result.length; s++) {
+              this.logResult(result[s]);
               if (
                 result[s].id === homebridgeAccessory.mowerID &&
                 result[s].status &&
@@ -191,6 +202,8 @@ myAutoMowerPlatform.prototype = {
         this.getMowers(result => {
           if (result && result instanceof Array && result.length > 0) {
             for (let s = 0; s < result.length; s++) {
+              this.logResult(result[s]);
+
               if (
                 result[s].id === homebridgeAccessory.mowerID &&
                 result[s].status &&
@@ -281,17 +294,7 @@ myAutoMowerPlatform.prototype = {
           this.log.debug('INFO - mowers result : ' + JSON.stringify(result));
           if (result && result instanceof Array && result.length > 0) {
             for (let s = 0; s < result.length; s++) {
-              this.log.debug(
-                'INFO - mower id : ' +
-                  result[s].id +
-                  '/' +
-                  homebridgeAccessory.mowerID
-              );
-              this.log.debug('INFO - mower status : ' + result[s].status);
-              this.log.debug(
-                'INFO - mower activity : ' +
-                  result[s].status.mowerStatus.activity
-              );
+              this.logResult(result[s]);
               if (
                 result[s].id === homebridgeAccessory.mowerID &&
                 result[s].status &&
