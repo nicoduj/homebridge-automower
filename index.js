@@ -43,7 +43,7 @@ myAutoMowerPlatform.prototype = {
   accessories: function(callback) {
     this.authenticate(error => {
       if (error) {
-        this.log.debug('Error - authenticating - ' + error);
+        this.log.debug('ERROR - authenticating - ' + error);
         callback(undefined);
       } else {
         this.getMowers(result => {
@@ -102,7 +102,7 @@ myAutoMowerPlatform.prototype = {
             callback(this.foundAccessories);
           } else {
             //prevent homebridge from starting since we don't want to loose our doors.
-            this.log.debug('Error - gettingMowers - ' + error);
+            this.log.debug('ERROR - gettingMowers - ' + error);
             callback(undefined);
           }
         });
@@ -118,7 +118,7 @@ myAutoMowerPlatform.prototype = {
   },
 
   getBatteryLevelCharacteristic: function(homebridgeAccessory, callback) {
-    this.log.debug('getBatteryLevelCharacteristic');
+    this.log.debug('INFO - getBatteryLevelCharacteristic');
     var percent = 0;
     this.authenticate(error => {
       if (error) {
@@ -140,7 +140,7 @@ myAutoMowerPlatform.prototype = {
     });
   },
   getChargingStateCharacteristic: function(homebridgeAccessory, callback) {
-    this.log.debug('getChargingStateCharacteristic');
+    this.log.debug('INFO - getChargingStateCharacteristic');
     var charging = 0;
 
     this.authenticate(error => {
@@ -168,7 +168,7 @@ myAutoMowerPlatform.prototype = {
     });
   },
   getLowBatteryCharacteristic: function(homebridgeAccessory, callback) {
-    this.log.debug('getLowBatteryCharacteristic');
+    this.log.debug('INFO - getLowBatteryCharacteristic');
     var lowww = 0;
     this.authenticate(error => {
       if (error) {
@@ -193,7 +193,7 @@ myAutoMowerPlatform.prototype = {
     });
   },
   getSwitchOnCharacteristic: function(homebridgeAccessory, callback) {
-    this.log.debug('getSwitchOnCharacteristic');
+    this.log.debug('INFO - getSwitchOnCharacteristic');
     var onn = false;
     this.authenticate(error => {
       if (error) {
@@ -224,7 +224,7 @@ myAutoMowerPlatform.prototype = {
     value,
     callback
   ) {
-    this.log.debug('setSwitchOnCharacteristic - ' + value);
+    this.log.debug('INFO - setSwitchOnCharacteristic - ' + value);
 
     var commandURL;
     if (value) {
@@ -261,7 +261,8 @@ myAutoMowerPlatform.prototype = {
             json: true,
           },
           function(error, response, body) {
-            that.log.debug('Command sent' + commandURL);
+            that.log.debug('INFO - Command sent : ' + commandURL);
+            that.log.debug('INFO - Body received : ' + body);
             if (error) {
               that.log(error.message);
               setTimeout(function() {
@@ -269,7 +270,7 @@ myAutoMowerPlatform.prototype = {
               }, 200);
               callback(error);
             } else if (response && response.statusCode !== 200) {
-              that.log('No 200 return ' + response.statusCode);
+              that.log('ERROR - No 200 return ' + response.statusCode);
               setTimeout(function() {
                 characteristic.updateValue(currentValue);
               }, 200);
@@ -353,7 +354,8 @@ myAutoMowerPlatform.prototype = {
             json: true,
           },
           function(error, response, body) {
-            that.log.debug('Command sent' + commandURL);
+            that.log.debug('INFO - Command sent' + commandURL);
+            that.log.debug('INFO - body received' + body);
             if (error) {
               that.log(error.message);
 
@@ -363,7 +365,7 @@ myAutoMowerPlatform.prototype = {
 
               callback(error);
             } else if (response && response.statusCode !== 200) {
-              that.log('No 200 return ' + response.statusCode);
+              that.log('ERROR - No 200 return ' + response.statusCode);
 
               setTimeout(function() {
                 characteristic.updateValue(currentValue);
@@ -386,7 +388,7 @@ myAutoMowerPlatform.prototype = {
       !this.token ||
       (this.token && this.loginExpires && this.loginExpires < dte)
     ) {
-      this.log.debug('authenticating');
+      this.log.debug('INFO - authenticating');
 
       var jsonBody = {
         data: {
@@ -412,7 +414,7 @@ myAutoMowerPlatform.prototype = {
             that.log(error.message);
             callback(error);
           } else if (response && response.statusCode !== 201) {
-            that.log('No 201 return ' + response.statusCode);
+            that.log('ERROR - No 201 return ' + response.statusCode);
             callback(error);
           } else if (body && body.data) {
             that.token = body.data.id;
@@ -426,14 +428,17 @@ myAutoMowerPlatform.prototype = {
             that.headers['Authorization-Provider'] = that.tokenProvider;
             callback();
           } else {
-            that.log('No body');
+            that.log('ERROR - No body');
             callback('No body');
           }
         }
       );
     } else {
       this.log.debug(
-        'allready authenticate expiration : ' + this.loginExpires + '-' + dte
+        'INFO - allready authenticate expiration : ' +
+          this.loginExpires +
+          '-' +
+          dte
       );
       callback();
     }
@@ -561,7 +566,7 @@ myAutoMowerPlatform.prototype = {
     //timer for background refresh
     if (this.refreshTimer !== undefined && this.refreshTimer > 0) {
       this.log.debug(
-        'Setting Timer for background refresh every  : ' +
+        'INFO - Setting Timer for background refresh every  : ' +
           this.refreshTimer +
           's'
       );
