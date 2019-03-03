@@ -156,7 +156,7 @@ myAutoMowerPlatform.prototype = {
                 result[s].status &&
                 result[s].status.connected &&
                 (result[s].batteryPercent < 100 ||
-                  result[s].status.mowerStatus.state.startsWith('CHARGING'))
+                  result[s].status.mowerStatus.activity.startsWith('CHARGING'))
               ) {
                 charging = 1;
                 break;

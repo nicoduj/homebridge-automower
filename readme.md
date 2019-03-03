@@ -1,5 +1,13 @@
 # Homebridge-automower
 
+[![npm](https://img.shields.io/npm/v/homebridge-automower.svg)](https://www.npmjs.com/package/homebridge-automower)
+[![npm](https://img.shields.io/npm/dw/homebridge-automower.svg)](https://www.npmjs.com/package/homebridge-automower)
+[![npm](https://img.shields.io/npm/dt/homebridge-automower.svg)](https://www.npmjs.com/package/homebridge-automower)
+
+[![Build Status](https://travis-ci.com/nicoduj/homebridge-automower.svg?branch=master)](https://travis-ci.com/nicoduj/homebridge-automower)
+[![Known Vulnerabilities](https://snyk.io/test/github/nicoduj/homebridge-automower/badge.svg?targetFile=package.json)](https://snyk.io/test/github/nicoduj/homebridge-automower?targetFile=package.json)
+[![Greenkeeper badge](https://badges.greenkeeper.io/nicoduj/homebridge-automower.svg)](https://greenkeeper.io/)
+
 <img src="https://user-images.githubusercontent.com/19813688/48661529-729f9600-ea73-11e8-8051-37adfd687922.PNG" width="25%" align="right"> 
 <img src="https://user-images.githubusercontent.com/19813688/48661518-4c79f600-ea73-11e8-9c2f-45a8958106a5.PNG" width="25%" align="right">
 
@@ -36,6 +44,8 @@ Fields:
 
 ## Changelog
 
+- 1.1.2
+  - [FIX] charging status not correct
 - 1.1.1
   - [FIX] status not retrieved
 - 1.1.0
