@@ -1,27 +1,16 @@
 var Service, Characteristic;
-const request = require('request');
+var AutoMowerAPI = require('./autoMowerAPI.js').AutoMowerAPI;
+
+const AutoMowerTools = require('./autoMowerTools.js');
 
 function myAutoMowerPlatform(log, config, api) {
   this.log = log;
   this.login = config['email'];
   this.password = config['password'];
-  this.refreshTimer = config['refreshTimer'];
+  this.refreshTimer = AutoMowerTools.checkTimer(config['refreshTimer']);
 
   this.foundAccessories = [];
-
-  if (
-    this.refreshTimer &&
-    this.refreshTimer > 0 &&
-    (this.refreshTimer < 30 || this.refreshTimer > 600)
-  )
-    this.refreshTimer = 180;
-
-  this.headers = {
-    Accept: 'application/json',
-    'Content-type': 'application/json',
-  };
-  this.imApiUrl = 'https://iam-api.dss.husqvarnagroup.net/api/v3/';
-  this.trackApiUrl = 'https://amc-api.dss.husqvarnagroup.net/app/v1/';
+  this.autoMowerAPI = new AutoMowerAPI(log, this);
 
   if (api) {
     // Save the API object as plugin needs to register new accessory via this object
@@ -41,12 +30,12 @@ module.exports = function(homebridge) {
 
 myAutoMowerPlatform.prototype = {
   accessories: function(callback) {
-    this.authenticate(error => {
+    this.autoMowerAPI.authenticate(error => {
       if (error) {
         this.log.debug('ERROR - authenticating - ' + error);
         callback(undefined);
       } else {
-        this.getMowers(result => {
+        this.autoMowerAPI.getMowers(result => {
           if (result && result instanceof Array && result.length > 0) {
             for (let s = 0; s < result.length; s++) {
               this.log.debug('Mower : ' + JSON.stringify(result[s]));
@@ -83,7 +72,9 @@ myAutoMowerPlatform.prototype = {
               switchService.controlService.id = result[s].id;
               services.push(switchService);
 
-              let myMowerAccessory = new AutoMowerAccessory(services);
+              let myMowerAccessory = new AutoMowerTools.AutoMowerAccessory(
+                services
+              );
               myMowerAccessory.getServices = function() {
                 return this.platform.getServices(myMowerAccessory);
               };
@@ -110,24 +101,17 @@ myAutoMowerPlatform.prototype = {
     });
   },
 
-  logResult(result) {
-    this.log.debug('INFO - mower status : ' + JSON.stringify(result.status));
-    this.log.debug(
-      'INFO - mower activity : ' + result.status.mowerStatus.activity
-    );
-  },
-
   getBatteryLevelCharacteristic: function(homebridgeAccessory, callback) {
     this.log.debug('INFO - getBatteryLevelCharacteristic');
     var percent = 0;
-    this.authenticate(error => {
+    this.autoMowerAPI.authenticate(error => {
       if (error) {
         callback(undefined, percent);
       } else {
-        this.getMowers(result => {
+        this.autoMowerAPI.getMowers(result => {
           if (result && result instanceof Array && result.length > 0) {
             for (let s = 0; s < result.length; s++) {
-              this.logResult(result[s]);
+              this.autoMowerAPI.logResult(result[s]);
               if (result[s].id === homebridgeAccessory.mowerID) {
                 percent = result[s].status.batteryPercent;
                 break;
@@ -143,14 +127,14 @@ myAutoMowerPlatform.prototype = {
     this.log.debug('INFO - getChargingStateCharacteristic');
     var charging = 0;
 
-    this.authenticate(error => {
+    this.autoMowerAPI.authenticate(error => {
       if (error) {
         callback(undefined, charging);
       } else
-        this.getMowers(result => {
+        this.autoMowerAPI.getMowers(result => {
           if (result && result instanceof Array && result.length > 0) {
             for (let s = 0; s < result.length; s++) {
-              this.logResult(result[s]);
+              this.autoMowerAPI.logResult(result[s]);
               if (
                 result[s].id === homebridgeAccessory.mowerID &&
                 result[s].status &&
@@ -170,14 +154,14 @@ myAutoMowerPlatform.prototype = {
   getLowBatteryCharacteristic: function(homebridgeAccessory, callback) {
     this.log.debug('INFO - getLowBatteryCharacteristic');
     var lowww = 0;
-    this.authenticate(error => {
+    this.autoMowerAPI.authenticate(error => {
       if (error) {
         callback(undefined, lowww);
       } else
-        this.getMowers(result => {
+        this.autoMowerAPI.getMowers(result => {
           if (result && result instanceof Array && result.length > 0) {
             for (let s = 0; s < result.length; s++) {
-              this.logResult(result[s]);
+              this.autoMowerAPI.logResult(result[s]);
               if (
                 result[s].id === homebridgeAccessory.mowerID &&
                 result[s].status &&
@@ -195,14 +179,14 @@ myAutoMowerPlatform.prototype = {
   getSwitchOnCharacteristic: function(homebridgeAccessory, callback) {
     this.log.debug('INFO - getSwitchOnCharacteristic');
     var onn = false;
-    this.authenticate(error => {
+    this.autoMowerAPI.authenticate(error => {
       if (error) {
         callback(undefined, onn);
       } else
-        this.getMowers(result => {
+        this.autoMowerAPI.getMowers(result => {
           if (result && result instanceof Array && result.length > 0) {
             for (let s = 0; s < result.length; s++) {
-              this.logResult(result[s]);
+              this.autoMowerAPI.logResult(result[s]);
 
               if (
                 result[s].id === homebridgeAccessory.mowerID &&
@@ -246,7 +230,7 @@ myAutoMowerPlatform.prototype = {
     var currentValue = characteristic.value;
 
     var that = this;
-    this.authenticate(error => {
+    this.autoMowerAPI.authenticate(error => {
       if (error) {
         setTimeout(function() {
           characteristic.updateValue(currentValue);
@@ -287,15 +271,15 @@ myAutoMowerPlatform.prototype = {
     this.log.debug('getMowerOnCharacteristic');
 
     var mowing = 0;
-    this.authenticate(error => {
+    this.autoMowerAPI.authenticate(error => {
       if (error) {
         callback(undefined, mowing);
       } else
-        this.getMowers(result => {
+        this.autoMowerAPI.getMowers(result => {
           this.log.debug('INFO - mowers result : ' + JSON.stringify(result));
           if (result && result instanceof Array && result.length > 0) {
             for (let s = 0; s < result.length; s++) {
-              this.logResult(result[s]);
+              this.autoMowerAPI.logResult(result[s]);
               if (
                 result[s].id === homebridgeAccessory.mowerID &&
                 result[s].status &&
@@ -339,7 +323,7 @@ myAutoMowerPlatform.prototype = {
     var currentValue = characteristic.value;
     that.log('current value' + currentValue);
 
-    this.authenticate(error => {
+    this.autoMowerAPI.authenticate(error => {
       if (error) {
         setTimeout(function() {
           characteristic.updateValue(currentValue);
@@ -379,99 +363,6 @@ myAutoMowerPlatform.prototype = {
         );
       }
     });
-  },
-
-  authenticate: function(callback) {
-    var dte = new Date();
-
-    if (
-      !this.token ||
-      (this.token && this.loginExpires && this.loginExpires < dte)
-    ) {
-      this.log.debug('INFO - authenticating');
-
-      var jsonBody = {
-        data: {
-          attributes: {
-            password: this.password,
-            username: this.login,
-          },
-          type: 'token',
-        },
-      };
-
-      var that = this;
-      request(
-        {
-          url: this.imApiUrl + 'token',
-          method: 'POST',
-          headers: this.headers,
-          body: jsonBody,
-          json: true,
-        },
-        function(error, response, body) {
-          if (error) {
-            that.log(error.message);
-            callback(error);
-          } else if (response && response.statusCode !== 201) {
-            that.log('ERROR - No 201 return ' + response.statusCode);
-            callback(error);
-          } else if (body && body.data) {
-            that.token = body.data.id;
-            that.tokenProvider = body.data.attributes.provider;
-            that.loginExpiry = body.data.attributes.expires_in;
-            that.loginExpires = new Date();
-            that.loginExpires.setMilliseconds(
-              that.loginExpires.getMilliseconds() + that.loginExpiry - 30000
-            );
-            that.headers['Authorization'] = 'Bearer ' + that.token;
-            that.headers['Authorization-Provider'] = that.tokenProvider;
-            callback();
-          } else {
-            that.log('ERROR - No body');
-            callback('No body');
-          }
-        }
-      );
-    } else {
-      this.log.debug(
-        'INFO - allready authenticate expiration : ' +
-          this.loginExpires +
-          '-' +
-          dte
-      );
-      callback();
-    }
-  },
-
-  getMowers: function(callback) {
-    const that = this;
-    request(
-      {
-        url: this.trackApiUrl + 'mowers',
-        method: 'GET',
-        headers: this.headers,
-        json: true,
-      },
-      function(error, response, body) {
-        if (error) {
-          that.log('ERROR - retrieving mower - ' + error.message);
-          rcallback(error);
-        } else if (response && response.statusCode !== 200) {
-          that.log('ERROR - No 200 return ' + response.statusCode);
-          callback(error);
-        } else if (body.length > 0) {
-          let mowers = [];
-          body.forEach(mower => {
-            mowers.push(mower);
-          });
-          callback(mowers);
-        } else {
-          that.log('ERROR - No body returned from Automower API');
-          callback('No body');
-        }
-      }
-    );
   },
 
   bindCharacteristicEvents: function(
@@ -621,15 +512,3 @@ myAutoMowerPlatform.prototype = {
     return services;
   },
 };
-
-function AutoMowerAccessory(services) {
-  this.services = services;
-}
-
-//URLS
-//me.trackApiUrl + 'mowers/' + me.mowerID + '/control/start/';
-//me.trackApiUrl + 'mowers/' + me.mowerID + '/control/start/';
-//me.trackApiUrl + 'mowers/' + me.mowerID + '/control/start/override/period'; + JSON String "duration" in body
-//me.trackApiUrl + 'mowers/' + me.mowerID + '/control/pause';
-//me.trackApiUrl + 'mowers/' + me.mowerID + '/control/park/duration/timer';
-//me.trackApiUrl + 'mowers/' + me.mowerID + '/control/park/duration/period'; + JSON String "duration" in body
