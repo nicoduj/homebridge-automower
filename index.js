@@ -123,7 +123,7 @@ myAutoMowerPlatform.prototype = {
         callback(undefined, percent);
       } else {
         this.autoMowerAPI.getMowers(result => {
-          this.getBatteryLevel(homebridgeAccessory, result);
+          percent = this.getBatteryLevel(homebridgeAccessory, result);
           callback(undefined, percent);
         });
       }
@@ -161,7 +161,7 @@ myAutoMowerPlatform.prototype = {
         callback(undefined, charging);
       } else
         this.autoMowerAPI.getMowers(result => {
-          this.getChargingState(homebridgeAccessory, result);
+          charging = this.getChargingState(homebridgeAccessory, result);
           callback(undefined, charging);
         });
     });
