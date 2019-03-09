@@ -47,6 +47,8 @@ Fields:
 
 ## Changelog
 
+- 1.1.4
+  - [FIX] fixing charging stae / battery level
 - 1.1.3
   - [NEW] huge refactoring to enhance code quality (I hope there won't be too much bugs ! )
   - [NEW] refreshTimer for background refresh
