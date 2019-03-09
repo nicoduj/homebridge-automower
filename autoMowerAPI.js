@@ -60,7 +60,12 @@ AutoMowerAPI.prototype = {
             that.log(error.message);
             callback(error);
           } else if (response && response.statusCode !== 201) {
-            that.log('ERROR - No 201 return ' + response.statusCode);
+            that.log(
+              'ERROR - authenticate - No 201 return ' +
+                response.statusCode +
+                '/' +
+                response
+            );
             callback(error);
           } else if (body && body.data) {
             that.token = body.data.id;
@@ -74,7 +79,7 @@ AutoMowerAPI.prototype = {
             that.headers['Authorization-Provider'] = that.tokenProvider;
             callback();
           } else {
-            that.log('ERROR - No body');
+            that.log('ERROR - authenticate - No body');
             callback('No body');
           }
         }
@@ -101,10 +106,15 @@ AutoMowerAPI.prototype = {
       },
       function(error, response, body) {
         if (error) {
-          that.log('ERROR - retrieving mower - ' + error.message);
+          that.log('ERROR - getMowers - retrieving mower - ' + error.message);
           callback(error);
         } else if (response && response.statusCode !== 200) {
-          that.log('ERROR - No 200 return ' + response.statusCode);
+          that.log(
+            'ERROR - getMowers - No 200 return ' +
+              response.statusCode +
+              '/' +
+              response
+          );
           callback(error);
         } else if (body.length > 0) {
           let mowers = [];
@@ -113,7 +123,7 @@ AutoMowerAPI.prototype = {
           });
           callback(mowers);
         } else {
-          that.log('ERROR - No body returned from Automower API');
+          that.log('ERROR - getMowers -No body returned from Automower API');
           callback('No body');
         }
       }
@@ -149,7 +159,7 @@ AutoMowerAPI.prototype = {
           },
           function(error, response, body) {
             that.log('INFO - Command sent : ' + commandURL);
-            that.log.debug('INFO - Body received : ' + body);
+            that.log.debug('INFO - Body received : ' + JSON.stringify(body));
             if (error) {
               that.log(error.message);
               setTimeout(function() {
@@ -157,7 +167,9 @@ AutoMowerAPI.prototype = {
               }, 200);
               callback(error);
             } else if (response && response.statusCode !== 200) {
-              that.log('ERROR - No 200 return ' + response.statusCode);
+              that.log(
+                'ERROR - sendCommand -  No 200 return ' + response.statusCode
+              );
               setTimeout(function() {
                 characteristic.updateValue(currentValue);
               }, 200);

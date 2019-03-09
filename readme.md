@@ -43,11 +43,13 @@ Fields:
 - `platform` must be "HomebridgeAutomower" (required).
 - `email` email used for your automower account (required).
 - `password` password of your automower account (required).
+- `refreshTimer` Optional - enable refresh of autoMower state every X seconds, for automation purpose if you need to activate something else based on its state change (defaults : disable, accepted range : 30-600s).
 
 ## Changelog
 
 - 1.1.3
   - [NEW] huge refactoring to enhance code quality (I hope there won't be too much bugs ! )
+  - [NEW] refreshTimer for background refresh
 - 1.1.2
   - [FIX] charging status not correct
 - 1.1.1
