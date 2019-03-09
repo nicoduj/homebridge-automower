@@ -119,6 +119,57 @@ AutoMowerAPI.prototype = {
       }
     );
   },
+
+  sendCommand: function(
+    homebridgeAccessory,
+    command,
+    characteristic,
+    callback
+  ) {
+    const that = this;
+    var currentValue = characteristic.value;
+    var commandURL;
+
+    commandURL =
+      this.trackApiUrl + 'mowers/' + homebridgeAccessory.mowerID + command;
+
+    this.authenticate(error => {
+      if (error) {
+        setTimeout(function() {
+          characteristic.updateValue(currentValue);
+        }, 200);
+        callback(error);
+      } else {
+        request(
+          {
+            url: commandURL,
+            method: 'POST',
+            headers: that.headers,
+            json: true,
+          },
+          function(error, response, body) {
+            that.log('INFO - Command sent : ' + commandURL);
+            that.log.debug('INFO - Body received : ' + body);
+            if (error) {
+              that.log(error.message);
+              setTimeout(function() {
+                characteristic.updateValue(currentValue);
+              }, 200);
+              callback(error);
+            } else if (response && response.statusCode !== 200) {
+              that.log('ERROR - No 200 return ' + response.statusCode);
+              setTimeout(function() {
+                characteristic.updateValue(currentValue);
+              }, 200);
+              callback(error);
+            } else {
+              callback();
+            }
+          }
+        );
+      }
+    });
+  },
 };
 
 //URLS

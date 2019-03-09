@@ -1,6 +1,6 @@
 var Service, Characteristic;
 var AutoMowerAPI = require('./autoMowerAPI.js').AutoMowerAPI;
-
+const AutoMowerConst = require('./autoMowerConst');
 const AutoMowerTools = require('./autoMowerTools.js');
 
 function myAutoMowerPlatform(log, config, api) {
@@ -140,7 +140,9 @@ myAutoMowerPlatform.prototype = {
                 result[s].status &&
                 result[s].status.connected &&
                 (result[s].batteryPercent < 100 ||
-                  result[s].status.mowerStatus.activity.startsWith('CHARGING'))
+                  result[s].status.mowerStatus.activity.startsWith(
+                    AutoMowerConst.CHARGING
+                  ))
               ) {
                 charging = 1;
                 break;
@@ -191,7 +193,9 @@ myAutoMowerPlatform.prototype = {
               if (
                 result[s].id === homebridgeAccessory.mowerID &&
                 result[s].status &&
-                result[s].status.mowerStatus.state.startsWith('IN_OPERATION')
+                result[s].status.mowerStatus.state.startsWith(
+                  AutoMowerConst.IN_OPERATION
+                )
               ) {
                 onn = true;
                 break;
@@ -209,63 +213,12 @@ myAutoMowerPlatform.prototype = {
     callback
   ) {
     this.log.debug('INFO - setSwitchOnCharacteristic - ' + value);
-
-    var commandURL;
-    if (value) {
-      //startMainArea
-      commandURL =
-        this.trackApiUrl +
-        'mowers/' +
-        homebridgeAccessory.mowerID +
-        '/control/start/';
-    } else {
-      //park parkUntilNextStart
-      commandURL =
-        this.trackApiUrl +
-        'mowers/' +
-        homebridgeAccessory.mowerID +
-        '/control/park/duration/timer';
-    }
-
-    var currentValue = characteristic.value;
-
-    var that = this;
-    this.autoMowerAPI.authenticate(error => {
-      if (error) {
-        setTimeout(function() {
-          characteristic.updateValue(currentValue);
-        }, 200);
-        callback(error);
-      } else {
-        request(
-          {
-            url: commandURL,
-            method: 'POST',
-            headers: that.headers,
-            json: true,
-          },
-          function(error, response, body) {
-            that.log.debug('INFO - Command sent : ' + commandURL);
-            that.log.debug('INFO - Body received : ' + body);
-            if (error) {
-              that.log(error.message);
-              setTimeout(function() {
-                characteristic.updateValue(currentValue);
-              }, 200);
-              callback(error);
-            } else if (response && response.statusCode !== 200) {
-              that.log('ERROR - No 200 return ' + response.statusCode);
-              setTimeout(function() {
-                characteristic.updateValue(currentValue);
-              }, 200);
-              callback(error);
-            } else {
-              callback();
-            }
-          }
-        );
-      }
-    });
+    this.autoMowerAPI.sendCommand(
+      homebridgeAccessory,
+      value ? AutoMowerConst.START_COMMAND : AutoMowerConst.PARK_COMMAND,
+      characteristic,
+      callback
+    );
   },
   getMowerOnCharacteristic: function(homebridgeAccessory, callback) {
     this.log.debug('getMowerOnCharacteristic');
@@ -283,7 +236,9 @@ myAutoMowerPlatform.prototype = {
               if (
                 result[s].id === homebridgeAccessory.mowerID &&
                 result[s].status &&
-                result[s].status.mowerStatus.activity.startsWith('MOWING')
+                result[s].status.mowerStatus.activity.startsWith(
+                  AutoMowerConst.MOWING
+                )
               ) {
                 mowing = 1;
                 break;
@@ -301,68 +256,12 @@ myAutoMowerPlatform.prototype = {
     callback
   ) {
     this.log.debug('setMowerOnCharacteristic -' + value);
-
-    var commandURL;
-    if (value) {
-      //startMainArea
-      commandURL =
-        this.trackApiUrl +
-        'mowers/' +
-        homebridgeAccessory.mowerID +
-        '/control/start/';
-    } else {
-      //pause
-      commandURL =
-        this.trackApiUrl +
-        'mowers/' +
-        homebridgeAccessory.mowerID +
-        '/control/pause';
-    }
-
-    var that = this;
-    var currentValue = characteristic.value;
-    that.log('current value' + currentValue);
-
-    this.autoMowerAPI.authenticate(error => {
-      if (error) {
-        setTimeout(function() {
-          characteristic.updateValue(currentValue);
-        }, 200);
-        callback(error);
-      } else {
-        request(
-          {
-            url: commandURL,
-            method: 'POST',
-            headers: that.headers,
-            json: true,
-          },
-          function(error, response, body) {
-            that.log.debug('INFO - Command sent' + commandURL);
-            that.log.debug('INFO - body received' + body);
-            if (error) {
-              that.log(error.message);
-
-              setTimeout(function() {
-                characteristic.updateValue(currentValue);
-              }, 200);
-
-              callback(error);
-            } else if (response && response.statusCode !== 200) {
-              that.log('ERROR - No 200 return ' + response.statusCode);
-
-              setTimeout(function() {
-                characteristic.updateValue(currentValue);
-              }, 200);
-
-              callback(error);
-            } else {
-              callback();
-            }
-          }
-        );
-      }
-    });
+    this.autoMowerAPI.sendCommand(
+      homebridgeAccessory,
+      value ? AutoMowerConst.START_COMMAND : AutoMowerConst.PAUSE_COMMAND,
+      characteristic,
+      callback
+    );
   },
 
   bindCharacteristicEvents: function(
