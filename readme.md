@@ -47,6 +47,8 @@ Fields:
 
 ## Changelog
 
+- 1.1.5
+  - [FIX] log fix for 201
 - 1.1.4
   - [FIX] fixing charging stae / battery level
 - 1.1.3

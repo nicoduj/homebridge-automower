@@ -64,7 +64,7 @@ AutoMowerAPI.prototype = {
               'ERROR - authenticate - No 201 return ' +
                 response.statusCode +
                 '/' +
-                response
+                JSON.stringify(response)
             );
             callback(error);
           } else if (body && body.data) {
@@ -113,7 +113,7 @@ AutoMowerAPI.prototype = {
             'ERROR - getMowers - No 200 return ' +
               response.statusCode +
               '/' +
-              response
+              JSON.stringify(response)
           );
           callback(error);
         } else if (body.length > 0) {
@@ -168,7 +168,10 @@ AutoMowerAPI.prototype = {
               callback(error);
             } else if (response && response.statusCode !== 200) {
               that.log(
-                'ERROR - sendCommand -  No 200 return ' + response.statusCode
+                'ERROR - sendCommand -  No 200 return ' +
+                  response.statusCode +
+                  '/' +
+                  JSON.stringify(response)
               );
               setTimeout(function() {
                 characteristic.updateValue(currentValue);
