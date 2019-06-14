@@ -34,7 +34,7 @@
   "devDependencies": {
     "husky": "^1.2.1",
     "prettier": "1.16.4",
-    "pretty-quick": "^1.8.0"
+    "pretty-quick": "^1.11.1"
   },
   "prettier": {
     "bracketSpacing": false,
