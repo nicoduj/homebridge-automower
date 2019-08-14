@@ -1,4 +1,6 @@
 const request = require('request');
+var locks = require('locks');
+var mutex = locks.createMutex();
 
 module.exports = {
   AutoMowerAPI: AutoMowerAPI,
@@ -47,43 +49,50 @@ AutoMowerAPI.prototype = {
       };
 
       var that = this;
-      request(
-        {
-          url: this.imApiUrl + 'token',
-          method: 'POST',
-          headers: this.headers,
-          body: jsonBody,
-          json: true,
-        },
-        function(error, response, body) {
-          if (error) {
-            that.log(error.message);
-            callback(error);
-          } else if (response && response.statusCode !== 201) {
-            that.log(
-              'ERROR - authenticate - No 201 return ' +
-                response.statusCode +
-                '/' +
-                response
-            );
-            callback(error);
-          } else if (body && body.data) {
-            that.token = body.data.id;
-            that.tokenProvider = body.data.attributes.provider;
-            that.loginExpiry = body.data.attributes.expires_in;
-            that.loginExpires = new Date();
-            that.loginExpires.setMilliseconds(
-              that.loginExpires.getMilliseconds() + that.loginExpiry - 30000
-            );
-            that.headers['Authorization'] = 'Bearer ' + that.token;
-            that.headers['Authorization-Provider'] = that.tokenProvider;
-            callback();
-          } else {
-            that.log('ERROR - authenticate - No body');
-            callback('No body');
+
+      mutex.lock(function () {
+        request(
+          {
+            url: this.imApiUrl + 'token',
+            method: 'POST',
+            headers: this.headers,
+            body: jsonBody,
+            json: true,
+          },
+          function(error, response, body) {
+            
+            mutex.unlock();
+
+            if (error) {
+              that.log(error.message);
+              callback(error);
+            } else if (response && response.statusCode !== 201) {
+              that.log(
+                'ERROR - authenticate - No 201 return ' +
+                  response.statusCode +
+                  '/' +
+                  response
+              );
+              callback(error);
+            } else if (body && body.data) {
+              that.token = body.data.id;
+              that.tokenProvider = body.data.attributes.provider;
+              that.loginExpiry = body.data.attributes.expires_in;
+              that.loginExpires = new Date();
+              that.loginExpires.setMilliseconds(
+                that.loginExpires.getMilliseconds() + that.loginExpiry - 30000
+              );
+              that.headers['Authorization'] = 'Bearer ' + that.token;
+              that.headers['Authorization-Provider'] = that.tokenProvider;
+              callback();
+            } else {
+              that.log('ERROR - authenticate - No body');
+              callback('No body');
+            }
           }
-        }
-      );
+        );
+
+      });
     } else {
       this.log.debug(
         'INFO - allready authenticate expiration : ' +
