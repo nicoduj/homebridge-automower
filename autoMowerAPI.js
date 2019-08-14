@@ -53,9 +53,9 @@ AutoMowerAPI.prototype = {
       mutex.lock(function () {
         request(
           {
-            url: this.imApiUrl + 'token',
+            url: that.imApiUrl + 'token',
             method: 'POST',
-            headers: this.headers,
+            headers: that.headers,
             body: jsonBody,
             json: true,
           },
@@ -71,7 +71,7 @@ AutoMowerAPI.prototype = {
                 'ERROR - authenticate - No 201 return ' +
                   response.statusCode +
                   '/' +
-                  response
+                  JSON.stringify(response)
               );
               callback(error);
             } else if (body && body.data) {
