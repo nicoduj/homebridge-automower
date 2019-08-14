@@ -47,6 +47,10 @@ Fields:
 
 ## Changelog
 
+- 1.1.6
+  - [FIX] fixing #9 Concurrent api logins
+- 1.1.5
+  - [FIX] log fix
 - 1.1.4
   - [FIX] fixing charging stae / battery level
 - 1.1.3
