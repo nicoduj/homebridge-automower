@@ -47,6 +47,8 @@ Fields:
 
 ## Changelog
 
+- 1.1.7
+  - [NEW] Supports config UI X configuration interface.
 - 1.1.6
   - [FIX] fixing #9 Concurrent api logins
 - 1.1.5
