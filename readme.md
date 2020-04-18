@@ -7,7 +7,7 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/nicoduj/homebridge-automower/badge)](https://www.codefactor.io/repository/github/nicoduj/homebridge-automower)
 [![Build Status](https://travis-ci.com/nicoduj/homebridge-automower.svg?branch=master)](https://travis-ci.com/nicoduj/homebridge-automower)
 [![Known Vulnerabilities](https://snyk.io/test/github/nicoduj/homebridge-automower/badge.svg?targetFile=package.json)](https://snyk.io/test/github/nicoduj/homebridge-automower?targetFile=package.json)
-[![Greenkeeper badge](https://badges.greenkeeper.io/nicoduj/homebridge-automower.svg)](https://greenkeeper.io/)
+
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 
 <img src="https://user-images.githubusercontent.com/19813688/48661529-729f9600-ea73-11e8-8051-37adfd687922.PNG" width="25%" align="right"> 
