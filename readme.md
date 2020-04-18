@@ -47,6 +47,8 @@ Fields:
 
 ## Changelog
 
+- 1.1.8
+  - [NEW] dep bump and config check for homebridge verified plugin process
 - 1.1.7
   - [NEW] Supports config UI X configuration interface.
 - 1.1.6

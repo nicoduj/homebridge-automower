@@ -4,6 +4,11 @@ const AutoMowerConst = require('./autoMowerConst');
 const AutoMowerTools = require('./autoMowerTools.js');
 
 function myAutoMowerPlatform(log, config, api) {
+  if (!config) {
+    log('No configuration found for homebridge-gogogate2');
+    return;
+  }
+
   this.log = log;
   this.login = config['email'];
   this.password = config['password'];
@@ -18,24 +23,20 @@ function myAutoMowerPlatform(log, config, api) {
   }
 }
 
-module.exports = function(homebridge) {
+module.exports = function (homebridge) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
-  homebridge.registerPlatform(
-    'homebridge-automower',
-    'HomebridgeAutomower',
-    myAutoMowerPlatform
-  );
+  homebridge.registerPlatform('homebridge-automower', 'HomebridgeAutomower', myAutoMowerPlatform);
 };
 
 myAutoMowerPlatform.prototype = {
-  accessories: function(callback) {
-    this.autoMowerAPI.authenticate(error => {
+  accessories: function (callback) {
+    this.autoMowerAPI.authenticate((error) => {
       if (error) {
         this.log.debug('ERROR - authenticating - ' + error);
         callback(undefined);
       } else {
-        this.autoMowerAPI.getMowers(result => {
+        this.autoMowerAPI.getMowers((result) => {
           if (result && result instanceof Array && result.length > 0) {
             for (let s = 0; s < result.length; s++) {
               this.log.debug('Mower : ' + JSON.stringify(result[s]));
@@ -72,10 +73,8 @@ myAutoMowerPlatform.prototype = {
               switchService.controlService.id = result[s].id;
               services.push(switchService);
 
-              let myMowerAccessory = new AutoMowerTools.AutoMowerAccessory(
-                services
-              );
-              myMowerAccessory.getServices = function() {
+              let myMowerAccessory = new AutoMowerTools.AutoMowerAccessory(services);
+              myMowerAccessory.getServices = function () {
                 return this.platform.getServices(myMowerAccessory);
               };
               myMowerAccessory.platform = this;
@@ -115,14 +114,14 @@ myAutoMowerPlatform.prototype = {
     return percent;
   },
 
-  getBatteryLevelCharacteristic: function(homebridgeAccessory, callback) {
+  getBatteryLevelCharacteristic: function (homebridgeAccessory, callback) {
     this.log.debug('INFO - getBatteryLevelCharacteristic');
     var percent = 0;
-    this.autoMowerAPI.authenticate(error => {
+    this.autoMowerAPI.authenticate((error) => {
       if (error) {
         callback(undefined, percent);
       } else {
-        this.autoMowerAPI.getMowers(result => {
+        this.autoMowerAPI.getMowers((result) => {
           percent = this.getBatteryLevel(homebridgeAccessory, result);
           callback(undefined, percent);
         });
@@ -140,9 +139,7 @@ myAutoMowerPlatform.prototype = {
           result[s].status &&
           result[s].status.connected &&
           (result[s].batteryPercent < 100 ||
-            result[s].status.mowerStatus.activity.startsWith(
-              AutoMowerConst.CHARGING
-            ))
+            result[s].status.mowerStatus.activity.startsWith(AutoMowerConst.CHARGING))
         ) {
           charging = 1;
           break;
@@ -152,15 +149,15 @@ myAutoMowerPlatform.prototype = {
     return charging;
   },
 
-  getChargingStateCharacteristic: function(homebridgeAccessory, callback) {
+  getChargingStateCharacteristic: function (homebridgeAccessory, callback) {
     this.log.debug('INFO - getChargingStateCharacteristic');
     var charging = 0;
 
-    this.autoMowerAPI.authenticate(error => {
+    this.autoMowerAPI.authenticate((error) => {
       if (error) {
         callback(undefined, charging);
       } else
-        this.autoMowerAPI.getMowers(result => {
+        this.autoMowerAPI.getMowers((result) => {
           charging = this.getChargingState(homebridgeAccessory, result);
           callback(undefined, charging);
         });
@@ -185,14 +182,14 @@ myAutoMowerPlatform.prototype = {
     return lowww;
   },
 
-  getLowBatteryCharacteristic: function(homebridgeAccessory, callback) {
+  getLowBatteryCharacteristic: function (homebridgeAccessory, callback) {
     this.log.debug('INFO - getLowBatteryCharacteristic');
     var lowww = 0;
-    this.autoMowerAPI.authenticate(error => {
+    this.autoMowerAPI.authenticate((error) => {
       if (error) {
         callback(undefined, lowww);
       } else
-        this.autoMowerAPI.getMowers(result => {
+        this.autoMowerAPI.getMowers((result) => {
           lowww = this.isLowBattery(homebridgeAccessory, result);
           callback(undefined, lowww);
         });
@@ -207,9 +204,7 @@ myAutoMowerPlatform.prototype = {
         if (
           result[s].id === homebridgeAccessory.mowerID &&
           result[s].status &&
-          result[s].status.mowerStatus.state.startsWith(
-            AutoMowerConst.IN_OPERATION
-          )
+          result[s].status.mowerStatus.state.startsWith(AutoMowerConst.IN_OPERATION)
         ) {
           onn = true;
           break;
@@ -219,14 +214,14 @@ myAutoMowerPlatform.prototype = {
     return onn;
   },
 
-  getSwitchOnCharacteristic: function(homebridgeAccessory, callback) {
+  getSwitchOnCharacteristic: function (homebridgeAccessory, callback) {
     this.log.debug('INFO - getSwitchOnCharacteristic');
     var onn = false;
-    this.autoMowerAPI.authenticate(error => {
+    this.autoMowerAPI.authenticate((error) => {
       if (error) {
         callback(undefined, onn);
       } else
-        this.autoMowerAPI.getMowers(result => {
+        this.autoMowerAPI.getMowers((result) => {
           this.log.debug('INFO - mowers result : ' + JSON.stringify(result));
           onn = this.isInOperation(homebridgeAccessory, result);
 
@@ -234,12 +229,7 @@ myAutoMowerPlatform.prototype = {
         });
     });
   },
-  setSwitchOnCharacteristic: function(
-    homebridgeAccessory,
-    characteristic,
-    value,
-    callback
-  ) {
+  setSwitchOnCharacteristic: function (homebridgeAccessory, characteristic, value, callback) {
     this.log.debug('INFO - setSwitchOnCharacteristic - ' + value);
     this.autoMowerAPI.sendCommand(
       homebridgeAccessory,
@@ -257,9 +247,7 @@ myAutoMowerPlatform.prototype = {
         if (
           result[s].id === homebridgeAccessory.mowerID &&
           result[s].status &&
-          result[s].status.mowerStatus.activity.startsWith(
-            AutoMowerConst.MOWING
-          )
+          result[s].status.mowerStatus.activity.startsWith(AutoMowerConst.MOWING)
         ) {
           mowing = 1;
           break;
@@ -269,27 +257,22 @@ myAutoMowerPlatform.prototype = {
     return mowing;
   },
 
-  getMowerOnCharacteristic: function(homebridgeAccessory, callback) {
+  getMowerOnCharacteristic: function (homebridgeAccessory, callback) {
     this.log.debug('getMowerOnCharacteristic');
 
     var mowing = 0;
-    this.autoMowerAPI.authenticate(error => {
+    this.autoMowerAPI.authenticate((error) => {
       if (error) {
         callback(undefined, mowing);
       } else
-        this.autoMowerAPI.getMowers(result => {
+        this.autoMowerAPI.getMowers((result) => {
           this.log.debug('INFO - mowers result : ' + JSON.stringify(result));
           mowing = this.isMowing(homebridgeAccessory, result);
           callback(undefined, mowing);
         });
     });
   },
-  setMowerOnCharacteristic: function(
-    homebridgeAccessory,
-    characteristic,
-    value,
-    callback
-  ) {
+  setMowerOnCharacteristic: function (homebridgeAccessory, characteristic, value, callback) {
     this.log.debug('setMowerOnCharacteristic -' + value);
     this.autoMowerAPI.sendCommand(
       homebridgeAccessory,
@@ -299,25 +282,18 @@ myAutoMowerPlatform.prototype = {
     );
   },
 
-  bindCharacteristicEvents: function(
-    characteristic,
-    service,
-    homebridgeAccessory
-  ) {
+  bindCharacteristicEvents: function (characteristic, service, homebridgeAccessory) {
     if (characteristic instanceof Characteristic.BatteryLevel) {
       characteristic.on(
         'get',
-        function(callback) {
-          homebridgeAccessory.platform.getBatteryLevelCharacteristic(
-            homebridgeAccessory,
-            callback
-          );
+        function (callback) {
+          homebridgeAccessory.platform.getBatteryLevelCharacteristic(homebridgeAccessory, callback);
         }.bind(this)
       );
     } else if (characteristic instanceof Characteristic.ChargingState) {
       characteristic.on(
         'get',
-        function(callback) {
+        function (callback) {
           homebridgeAccessory.platform.getChargingStateCharacteristic(
             homebridgeAccessory,
             callback
@@ -327,11 +303,8 @@ myAutoMowerPlatform.prototype = {
     } else if (characteristic instanceof Characteristic.StatusLowBattery) {
       characteristic.on(
         'get',
-        function(callback) {
-          homebridgeAccessory.platform.getLowBatteryCharacteristic(
-            homebridgeAccessory,
-            callback
-          );
+        function (callback) {
+          homebridgeAccessory.platform.getLowBatteryCharacteristic(homebridgeAccessory, callback);
         }.bind(this)
       );
     } else if (
@@ -340,17 +313,14 @@ myAutoMowerPlatform.prototype = {
     ) {
       characteristic.on(
         'get',
-        function(callback) {
-          homebridgeAccessory.platform.getSwitchOnCharacteristic(
-            homebridgeAccessory,
-            callback
-          );
+        function (callback) {
+          homebridgeAccessory.platform.getSwitchOnCharacteristic(homebridgeAccessory, callback);
         }.bind(this)
       );
 
       characteristic.on(
         'set',
-        function(value, callback) {
+        function (value, callback) {
           homebridgeAccessory.platform.setSwitchOnCharacteristic(
             homebridgeAccessory,
             characteristic,
@@ -365,17 +335,14 @@ myAutoMowerPlatform.prototype = {
     ) {
       characteristic.on(
         'get',
-        function(callback) {
-          homebridgeAccessory.platform.getMowerOnCharacteristic(
-            homebridgeAccessory,
-            callback
-          );
+        function (callback) {
+          homebridgeAccessory.platform.getMowerOnCharacteristic(homebridgeAccessory, callback);
         }.bind(this)
       );
 
       characteristic.on(
         'set',
-        function(value, callback) {
+        function (value, callback) {
           homebridgeAccessory.platform.setMowerOnCharacteristic(
             homebridgeAccessory,
             characteristic,
@@ -391,28 +358,21 @@ myAutoMowerPlatform.prototype = {
     //timer for background refresh
     if (this.refreshTimer !== undefined && this.refreshTimer > 0) {
       this.log.debug(
-        'INFO - Setting Timer for background refresh every  : ' +
-          this.refreshTimer +
-          's'
+        'INFO - Setting Timer for background refresh every  : ' + this.refreshTimer + 's'
       );
-      this.timerID = setInterval(
-        () => this.refreshAllMowers(),
-        this.refreshTimer * 1000
-      );
+      this.timerID = setInterval(() => this.refreshAllMowers(), this.refreshTimer * 1000);
     }
   },
 
-  refreshAllMowers: function() {
-    this.autoMowerAPI.authenticate(error => {
+  refreshAllMowers: function () {
+    this.autoMowerAPI.authenticate((error) => {
       if (error) {
         this.log.debug('ERROR - authenticating - ' + error);
         callback(undefined);
       } else {
-        this.autoMowerAPI.getMowers(result => {
+        this.autoMowerAPI.getMowers((result) => {
           for (let a = 0; a < this.foundAccessories.length; a++) {
-            this.log.debug(
-              'INFO - refreshing - ' + this.foundAccessories[a].name
-            );
+            this.log.debug('INFO - refreshing - ' + this.foundAccessories[a].name);
             this.refreshAutoMower(this.foundAccessories[a], result);
           }
         });
@@ -420,7 +380,7 @@ myAutoMowerPlatform.prototype = {
     });
   },
 
-  refreshAutoMower: function(myAutoMowerAccessory, result) {
+  refreshAutoMower: function (myAutoMowerAccessory, result) {
     for (let s = 0; s < myAutoMowerAccessory.services.length; s++) {
       let service = myAutoMowerAccessory.services[s];
 
@@ -450,23 +410,17 @@ myAutoMowerPlatform.prototype = {
     }
   },
 
-  getInformationService: function(homebridgeAccessory) {
+  getInformationService: function (homebridgeAccessory) {
     let informationService = new Service.AccessoryInformation();
     informationService
       .setCharacteristic(Characteristic.Name, homebridgeAccessory.name)
-      .setCharacteristic(
-        Characteristic.Manufacturer,
-        homebridgeAccessory.manufacturer
-      )
+      .setCharacteristic(Characteristic.Manufacturer, homebridgeAccessory.manufacturer)
       .setCharacteristic(Characteristic.Model, homebridgeAccessory.model)
-      .setCharacteristic(
-        Characteristic.SerialNumber,
-        homebridgeAccessory.serialNumber
-      );
+      .setCharacteristic(Characteristic.SerialNumber, homebridgeAccessory.serialNumber);
     return informationService;
   },
 
-  getServices: function(homebridgeAccessory) {
+  getServices: function (homebridgeAccessory) {
     let services = [];
     let informationService = homebridgeAccessory.platform.getInformationService(
       homebridgeAccessory
@@ -475,13 +429,9 @@ myAutoMowerPlatform.prototype = {
     for (let s = 0; s < homebridgeAccessory.services.length; s++) {
       let service = homebridgeAccessory.services[s];
       for (let i = 0; i < service.characteristics.length; i++) {
-        let characteristic = service.controlService.getCharacteristic(
-          service.characteristics[i]
-        );
+        let characteristic = service.controlService.getCharacteristic(service.characteristics[i]);
         if (characteristic == undefined)
-          characteristic = service.controlService.addCharacteristic(
-            service.characteristics[i]
-          );
+          characteristic = service.controlService.addCharacteristic(service.characteristics[i]);
 
         homebridgeAccessory.platform.bindCharacteristicEvents(
           characteristic,
