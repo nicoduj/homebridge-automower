@@ -47,6 +47,8 @@ Fields:
 
 ## Changelog
 
+- 1.1.9
+  - [NEW] fix log
 - 1.1.8
   - [NEW] dep bump and config check for homebridge verified plugin process
 - 1.1.7
