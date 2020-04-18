@@ -5,7 +5,7 @@ const AutoMowerTools = require('./autoMowerTools.js');
 
 function myAutoMowerPlatform(log, config, api) {
   if (!config) {
-    log('No configuration found for homebridge-gogogate2');
+    log('No configuration found for homebridge-automower');
     return;
   }
 
