@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.2.1
+
+- [FIX] cleanCache option
+
 ## 1.2.0
 
 - [NEW] fix launch error for certification and moving to dynamic platform
