@@ -22,20 +22,15 @@ function AutoMowerAPI(log, platform) {
 }
 
 AutoMowerAPI.prototype = {
-  logResult: function(result) {
+  logResult: function (result) {
     this.log.debug('INFO - mower status : ' + JSON.stringify(result.status));
-    this.log.debug(
-      'INFO - mower activity : ' + result.status.mowerStatus.activity
-    );
+    this.log.debug('INFO - mower activity : ' + result.status.mowerStatus.activity);
   },
 
-  authenticate: function(callback) {
+  authenticate: function (callback) {
     var dte = new Date();
 
-    if (
-      !this.token ||
-      (this.token && this.loginExpires && this.loginExpires < dte)
-    ) {
+    if (!this.token || (this.token && this.loginExpires && this.loginExpires < dte)) {
       this.log.debug('INFO - authenticating');
 
       var jsonBody = {
@@ -59,8 +54,7 @@ AutoMowerAPI.prototype = {
             body: jsonBody,
             json: true,
           },
-          function(error, response, body) {
-            
+          function (error, response, body) {
             mutex.unlock();
 
             if (error) {
@@ -73,7 +67,7 @@ AutoMowerAPI.prototype = {
                   '/' +
                   JSON.stringify(response)
               );
-              callback(error);
+              callback('No 201');
             } else if (body && body.data) {
               that.token = body.data.id;
               that.tokenProvider = body.data.attributes.provider;
@@ -91,20 +85,14 @@ AutoMowerAPI.prototype = {
             }
           }
         );
-
       });
     } else {
-      this.log.debug(
-        'INFO - allready authenticate expiration : ' +
-          this.loginExpires +
-          '-' +
-          dte
-      );
+      this.log.debug('INFO - allready authenticate expiration : ' + this.loginExpires + '-' + dte);
       callback();
     }
   },
 
-  getMowers: function(callback) {
+  getMowers: function (callback) {
     const that = this;
     request(
       {
@@ -113,21 +101,16 @@ AutoMowerAPI.prototype = {
         headers: this.headers,
         json: true,
       },
-      function(error, response, body) {
+      function (error, response, body) {
         if (error) {
           that.log('ERROR - getMowers - retrieving mower - ' + error.message);
           callback(error);
         } else if (response && response.statusCode !== 200) {
-          that.log(
-            'ERROR - getMowers - No 200 return ' +
-              response.statusCode +
-              '/' +
-              response
-          );
+          that.log('ERROR - getMowers - No 200 return ' + response.statusCode + '/' + response);
           callback(error);
         } else if (body.length > 0) {
           let mowers = [];
-          body.forEach(mower => {
+          body.forEach((mower) => {
             mowers.push(mower);
           });
           callback(mowers);
@@ -139,22 +122,16 @@ AutoMowerAPI.prototype = {
     );
   },
 
-  sendCommand: function(
-    homebridgeAccessory,
-    command,
-    characteristic,
-    callback
-  ) {
+  sendCommand: function (homebridgeAccessory, command, characteristic, callback) {
     const that = this;
     var currentValue = characteristic.value;
     var commandURL;
 
-    commandURL =
-      this.trackApiUrl + 'mowers/' + homebridgeAccessory.mowerID + command;
+    commandURL = this.trackApiUrl + 'mowers/' + homebridgeAccessory.mowerID + command;
 
-    this.authenticate(error => {
+    this.authenticate((error) => {
       if (error) {
-        setTimeout(function() {
+        setTimeout(function () {
           characteristic.updateValue(currentValue);
         }, 200);
         callback(error);
@@ -166,20 +143,18 @@ AutoMowerAPI.prototype = {
             headers: that.headers,
             json: true,
           },
-          function(error, response, body) {
+          function (error, response, body) {
             that.log('INFO - Command sent : ' + commandURL);
             that.log.debug('INFO - Body received : ' + JSON.stringify(body));
             if (error) {
               that.log(error.message);
-              setTimeout(function() {
+              setTimeout(function () {
                 characteristic.updateValue(currentValue);
               }, 200);
               callback(error);
             } else if (response && response.statusCode !== 200) {
-              that.log(
-                'ERROR - sendCommand -  No 200 return ' + response.statusCode
-              );
-              setTimeout(function() {
+              that.log('ERROR - sendCommand -  No 200 return ' + response.statusCode);
+              setTimeout(function () {
                 characteristic.updateValue(currentValue);
               }, 200);
               callback(error);

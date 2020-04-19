@@ -47,6 +47,8 @@ Fields:
 
 ## Changelog
 
+- 1.2.0
+  - [NEW] fix launch error for certification and moving to dynamic platform
 - 1.1.9
   - [NEW] fix log
 - 1.1.8

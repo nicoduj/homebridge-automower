@@ -1,7 +1,12 @@
-var Service, Characteristic;
+var Service, Characteristic, Accessory, UUIDGen;
+
 var AutoMowerAPI = require('./autoMowerAPI.js').AutoMowerAPI;
 const AutoMowerConst = require('./autoMowerConst');
-const AutoMowerTools = require('./autoMowerTools.js');
+
+checkTimer = function (timer) {
+  if (timer && timer > 0 && (timer < 30 || timer > 600)) return 300;
+  else return timer;
+};
 
 function myAutoMowerPlatform(log, config, api) {
   if (!config) {
@@ -9,33 +14,78 @@ function myAutoMowerPlatform(log, config, api) {
     return;
   }
 
+  this.api = api;
   this.log = log;
   this.login = config['email'];
   this.password = config['password'];
-  this.refreshTimer = AutoMowerTools.checkTimer(config['refreshTimer']);
+  this.refreshTimer = checkTimer(config['refreshTimer']);
 
   this.foundAccessories = [];
   this.autoMowerAPI = new AutoMowerAPI(log, this);
 
-  if (api) {
-    // Save the API object as plugin needs to register new accessory via this object
-    this.api = api;
-  }
+  this.api
+    .on(
+      'shutdown',
+      function () {
+        this.end();
+      }.bind(this)
+    )
+    .on(
+      'didFinishLaunching',
+      function () {
+        this.log('DidFinishLaunching');
+
+        if (this.cleanCache) {
+          this.log('WARNING - Removing Accessories');
+          this.api.unregisterPlatformAccessories(
+            'homebridge-automower',
+            'HomebridgeAutomower',
+            this.foundAccessories
+          );
+          this.foundAccessories = [];
+        }
+        this.discoverAutoMowers();
+      }.bind(this)
+    );
 }
 
 module.exports = function (homebridge) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
-  homebridge.registerPlatform('homebridge-automower', 'HomebridgeAutomower', myAutoMowerPlatform);
+  Accessory = homebridge.platformAccessory;
+  UUIDGen = homebridge.hap.uuid;
+  HomebridgeAPI = homebridge;
+  homebridge.registerPlatform(
+    'homebridge-automower',
+    'HomebridgeAutomower',
+    myAutoMowerPlatform,
+    true
+  );
 };
 
 myAutoMowerPlatform.prototype = {
-  accessories: function (callback) {
+  configureAccessory: function (accessory) {
+    this.log.debug(
+      accessory.displayName,
+      'Got cached Accessory ' + accessory.UUID + ' for ' + this.name
+    );
+
+    this.foundAccessories.push(accessory);
+  },
+
+  end() {
+    this.log('INFO - shutdown');
+    if (this.timerID) {
+      clearInterval(this.timerID);
+      this.timerID = undefined;
+    }
+
+    //TODO logout / clear listeners ...
+  },
+
+  discoverAutoMowers: function () {
     this.autoMowerAPI.authenticate((error) => {
-      if (error) {
-        this.log.debug('ERROR - authenticating - ' + error);
-        callback(undefined);
-      } else {
+      if (error == undefined) {
         this.autoMowerAPI.getMowers((result) => {
           if (result && result instanceof Array && result.length > 0) {
             for (let s = 0; s < result.length; s++) {
@@ -45,55 +95,87 @@ myAutoMowerPlatform.prototype = {
               let mowerModel = result[s].model;
               let mowerSeriaNumber = result[s].id;
 
-              let batteryService = {
-                controlService: new Service.BatteryService(mowerName),
-                characteristics: [
-                  Characteristic.ChargingState,
-                  Characteristic.StatusLowBattery,
-                  Characteristic.BatteryLevel,
-                ],
-              };
-              batteryService.controlService.subtype = mowerName;
-              batteryService.controlService.id = result[s].id;
-              services.push(batteryService);
+              let uuid = UUIDGen.generate(mowerName);
+              let myMowerAccessory = this.foundAccessories.find((x) => x.UUID == uuid);
 
-              let fanService = {
-                controlService: new Service.Fan(mowerName + ' Mowing'),
-                characteristics: [Characteristic.On],
-              };
-              fanService.controlService.subtype = mowerName + ' Mowing';
-              fanService.controlService.id = result[s].id;
-              services.push(fanService);
+              if (!myMowerAccessory) {
+                myMowerAccessory = new Accessory(mowerName, uuid);
+                myMowerAccessory.name = mowerName;
+                myMowerAccessory.model = mowerModel;
+                myMowerAccessory.manufacturer = 'Husqvarna Group';
+                myMowerAccessory.serialNumber = mowerSeriaNumber;
+                myMowerAccessory.mowerID = mowerSeriaNumber;
 
-              let switchService = {
-                controlService: new Service.Switch(mowerName + ' Auto/Park'),
-                characteristics: [Characteristic.On],
-              };
-              switchService.controlService.subtype = mowerName + ' Auto/Park';
-              switchService.controlService.id = result[s].id;
-              services.push(switchService);
+                myMowerAccessory
+                  .getService(Service.AccessoryInformation)
+                  .setCharacteristic(Characteristic.Manufacturer, myMowerAccessory.manufacturer)
+                  .setCharacteristic(Characteristic.Model, myMowerAccessory.model)
+                  .setCharacteristic(Characteristic.SerialNumber, myMowerAccessory.serialNumber);
 
-              let myMowerAccessory = new AutoMowerTools.AutoMowerAccessory(services);
-              myMowerAccessory.getServices = function () {
-                return this.platform.getServices(myMowerAccessory);
-              };
-              myMowerAccessory.platform = this;
-              myMowerAccessory.name = mowerName;
-              myMowerAccessory.model = mowerModel;
-              myMowerAccessory.manufacturer = 'Husqvarna Group';
-              myMowerAccessory.serialNumber = mowerSeriaNumber;
+                this.api.registerPlatformAccessories(
+                  'homebridge-automower',
+                  'HomebridgeAutomower',
+                  [myMowerAccessory]
+                );
+
+                this.foundAccessories.push(myMowerAccessory);
+              }
+
               myMowerAccessory.mowerID = mowerSeriaNumber;
-              this.foundAccessories.push(myMowerAccessory);
+              myMowerAccessory.name = mowerName;
+
+              let HKBatteryService = myMowerAccessory.getServiceByUUIDAndSubType(
+                mowerName,
+                'BatteryService' + mowerName
+              );
+
+              if (!HKBatteryService) {
+                this.log('INFO - Creating  Battery Service ' + mowerName + '/' + mowerName);
+                HKBatteryService = new Service.BatteryService(
+                  mowerName,
+                  'BatteryService' + mowerName
+                );
+                HKBatteryService.subtype = 'BatteryService' + mowerName;
+                myMowerAccessory.addService(HKBatteryService);
+              }
+
+              this.bindBatteryLevelCharacteristic(myMowerAccessory, HKBatteryService);
+              this.bindChargingStateCharacteristic(myMowerAccessory, HKBatteryService);
+              this.bindStatusLowBatteryCharacteristic(myMowerAccessory, HKBatteryService);
+
+              let HKFanService = myMowerAccessory.getServiceByUUIDAndSubType(
+                mowerName,
+                'FanService' + mowerName
+              );
+
+              if (!HKFanService) {
+                this.log('INFO - Creating  Fan Service ' + mowerName + '/' + mowerName);
+                HKFanService = new Service.Fan(mowerName, 'FanService' + mowerName);
+                HKFanService.subtype = 'FanService' + mowerName;
+                myMowerAccessory.addService(HKFanService);
+              }
+
+              this.bindFanOnCharacteristic(myMowerAccessory, HKFanService);
+
+              let HKSwitchService = myMowerAccessory.getServiceByUUIDAndSubType(
+                mowerName,
+                'SwitchService' + mowerName
+              );
+
+              if (!HKSwitchService) {
+                this.log('INFO - Creating  Switch Service ' + mowerName + '/' + mowerName);
+                HKSwitchService = new Service.Switch(mowerName, 'SwitchService' + mowerName);
+                HKSwitchService.subtype = 'SwitchService' + mowerName;
+                myMowerAccessory.addService(HKSwitchService);
+              }
+
+              this.bindSwitchOnCharacteristic(myMowerAccessory, HKSwitchService);
             }
 
             //timer for background refresh
             this.refreshBackground();
-
-            callback(this.foundAccessories);
           } else {
-            //prevent homebridge from starting since we don't want to loose our doors.
-            this.log.debug('ERROR - gettingMowers - ' + error);
-            callback(undefined);
+            this.log('ERROR - gettingMowers - no mower found - ' + result);
           }
         });
       }
@@ -282,76 +364,75 @@ myAutoMowerPlatform.prototype = {
     );
   },
 
-  bindCharacteristicEvents: function (characteristic, service, homebridgeAccessory) {
-    if (characteristic instanceof Characteristic.BatteryLevel) {
-      characteristic.on(
-        'get',
-        function (callback) {
-          homebridgeAccessory.platform.getBatteryLevelCharacteristic(homebridgeAccessory, callback);
-        }.bind(this)
-      );
-    } else if (characteristic instanceof Characteristic.ChargingState) {
-      characteristic.on(
-        'get',
-        function (callback) {
-          homebridgeAccessory.platform.getChargingStateCharacteristic(
-            homebridgeAccessory,
-            callback
-          );
-        }.bind(this)
-      );
-    } else if (characteristic instanceof Characteristic.StatusLowBattery) {
-      characteristic.on(
-        'get',
-        function (callback) {
-          homebridgeAccessory.platform.getLowBatteryCharacteristic(homebridgeAccessory, callback);
-        }.bind(this)
-      );
-    } else if (
-      characteristic instanceof Characteristic.On &&
-      service.controlService instanceof Service.Switch
-    ) {
-      characteristic.on(
-        'get',
-        function (callback) {
-          homebridgeAccessory.platform.getSwitchOnCharacteristic(homebridgeAccessory, callback);
-        }.bind(this)
-      );
+  bindBatteryLevelCharacteristic: function (homebridgeAccessory, service) {
+    service.getCharacteristic(Characteristic.BatteryLevel).on(
+      'get',
+      function (callback) {
+        this.getBatteryLevelCharacteristic(homebridgeAccessory, callback);
+      }.bind(this)
+    );
+  },
 
-      characteristic.on(
+  bindChargingStateCharacteristic: function (homebridgeAccessory, service) {
+    service.getCharacteristic(Characteristic.ChargingState).on(
+      'get',
+      function (callback) {
+        this.getChargingStateCharacteristic(homebridgeAccessory, callback);
+      }.bind(this)
+    );
+  },
+
+  bindStatusLowBatteryCharacteristic: function (homebridgeAccessory, service) {
+    service.getCharacteristic(Characteristic.StatusLowBattery).on(
+      'get',
+      function (callback) {
+        this.getLowBatteryCharacteristic(homebridgeAccessory, callback);
+      }.bind(this)
+    );
+  },
+
+  bindFanOnCharacteristic: function (homebridgeAccessory, service) {
+    service
+      .getCharacteristic(Characteristic.On)
+      .on(
+        'get',
+        function (callback) {
+          this.getMowerOnCharacteristic(homebridgeAccessory, callback);
+        }.bind(this)
+      )
+      .on(
         'set',
         function (value, callback) {
-          homebridgeAccessory.platform.setSwitchOnCharacteristic(
+          this.setMowerOnCharacteristic(
             homebridgeAccessory,
-            characteristic,
+            service.getCharacteristic(Characteristic.On),
             value,
             callback
           );
         }.bind(this)
       );
-    } else if (
-      characteristic instanceof Characteristic.On &&
-      service.controlService instanceof Service.Fan
-    ) {
-      characteristic.on(
+  },
+
+  bindSwitchOnCharacteristic: function (homebridgeAccessory, service) {
+    service
+      .getCharacteristic(Characteristic.On)
+      .on(
         'get',
         function (callback) {
-          homebridgeAccessory.platform.getMowerOnCharacteristic(homebridgeAccessory, callback);
+          this.getSwitchOnCharacteristic(homebridgeAccessory, callback);
         }.bind(this)
-      );
-
-      characteristic.on(
+      )
+      .on(
         'set',
         function (value, callback) {
-          homebridgeAccessory.platform.setMowerOnCharacteristic(
+          this.setSwitchOnCharacteristic(
             homebridgeAccessory,
-            characteristic,
+            service.getCharacteristic(Characteristic.On),
             value,
             callback
           );
         }.bind(this)
       );
-    }
   },
 
   refreshBackground() {
@@ -367,7 +448,6 @@ myAutoMowerPlatform.prototype = {
   refreshAllMowers: function () {
     this.autoMowerAPI.authenticate((error) => {
       if (error) {
-        this.log.debug('ERROR - authenticating - ' + error);
         callback(undefined);
       } else {
         this.autoMowerAPI.getMowers((result) => {
@@ -381,66 +461,45 @@ myAutoMowerPlatform.prototype = {
   },
 
   refreshAutoMower: function (myAutoMowerAccessory, result) {
-    for (let s = 0; s < myAutoMowerAccessory.services.length; s++) {
-      let service = myAutoMowerAccessory.services[s];
+    let mowerName = myAutoMowerAccessory.name;
 
-      if (service.controlService instanceof Service.BatteryService) {
-        service.controlService
-          .getCharacteristic(Characteristic.BatteryLevel)
-          .updateValue(this.getBatteryLevel(myAutoMowerAccessory, result));
-        service.controlService
-          .getCharacteristic(Characteristic.ChargingState)
-          .updateValue(this.getChargingState(myAutoMowerAccessory, result));
-        service.controlService
-          .getCharacteristic(Characteristic.StatusLowBattery)
-          .updateValue(this.isLowBattery(myAutoMowerAccessory, result));
-      }
-
-      if (service.controlService instanceof Service.Fan) {
-        service.controlService
-          .getCharacteristic(Characteristic.On)
-          .updateValue(this.isMowing(myAutoMowerAccessory, result));
-      }
-
-      if (service.controlService instanceof Service.Switch) {
-        service.controlService
-          .getCharacteristic(Characteristic.On)
-          .updateValue(this.isInOperation(myAutoMowerAccessory, result));
-      }
-    }
-  },
-
-  getInformationService: function (homebridgeAccessory) {
-    let informationService = new Service.AccessoryInformation();
-    informationService
-      .setCharacteristic(Characteristic.Name, homebridgeAccessory.name)
-      .setCharacteristic(Characteristic.Manufacturer, homebridgeAccessory.manufacturer)
-      .setCharacteristic(Characteristic.Model, homebridgeAccessory.model)
-      .setCharacteristic(Characteristic.SerialNumber, homebridgeAccessory.serialNumber);
-    return informationService;
-  },
-
-  getServices: function (homebridgeAccessory) {
-    let services = [];
-    let informationService = homebridgeAccessory.platform.getInformationService(
-      homebridgeAccessory
+    let HKSwitchService = myAutoMowerAccessory.getServiceByUUIDAndSubType(
+      mowerName,
+      'SwitchService' + mowerName
     );
-    services.push(informationService);
-    for (let s = 0; s < homebridgeAccessory.services.length; s++) {
-      let service = homebridgeAccessory.services[s];
-      for (let i = 0; i < service.characteristics.length; i++) {
-        let characteristic = service.controlService.getCharacteristic(service.characteristics[i]);
-        if (characteristic == undefined)
-          characteristic = service.controlService.addCharacteristic(service.characteristics[i]);
 
-        homebridgeAccessory.platform.bindCharacteristicEvents(
-          characteristic,
-          service,
-          homebridgeAccessory
-        );
-      }
-      services.push(service.controlService);
+    if (HKSwitchService) {
+      HKSwitchService.getCharacteristic(Characteristic.On).updateValue(
+        this.isInOperation(myAutoMowerAccessory, result)
+      );
     }
-    return services;
+
+    let HKFanService = myAutoMowerAccessory.getServiceByUUIDAndSubType(
+      mowerName,
+      'FanService' + mowerName
+    );
+
+    if (HKFanService) {
+      HKFanService.getCharacteristic(Characteristic.On).updateValue(
+        this.isMowing(myAutoMowerAccessory, result)
+      );
+    }
+
+    let HKBatteryService = myAutoMowerAccessory.getServiceByUUIDAndSubType(
+      mowerName,
+      'BatteryService' + mowerName
+    );
+
+    if (HKBatteryService) {
+      HKBatteryService.getCharacteristic(Characteristic.BatteryLevel).updateValue(
+        this.getBatteryLevel(myAutoMowerAccessory, result)
+      );
+      HKBatteryService.getCharacteristic(Characteristic.ChargingState).updateValue(
+        this.getChargingState(myAutoMowerAccessory, result)
+      );
+      HKBatteryService.getCharacteristic(Characteristic.StatusLowBattery).updateValue(
+        this.isLowBattery(myAutoMowerAccessory, result)
+      );
+    }
   },
 };
