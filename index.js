@@ -19,6 +19,7 @@ function myAutoMowerPlatform(log, config, api) {
   this.login = config['email'];
   this.password = config['password'];
   this.refreshTimer = checkTimer(config['refreshTimer']);
+  this.cleanCache = config['cleanCache'];
 
   this.foundAccessories = [];
   this.autoMowerAPI = new AutoMowerAPI(log, this);
@@ -65,10 +66,7 @@ module.exports = function (homebridge) {
 
 myAutoMowerPlatform.prototype = {
   configureAccessory: function (accessory) {
-    this.log.debug(
-      accessory.displayName,
-      'Got cached Accessory ' + accessory.UUID + ' for ' + this.name
-    );
+    this.log.debug(accessory.displayName, 'Got cached Accessory ' + accessory.UUID);
 
     this.foundAccessories.push(accessory);
   },
