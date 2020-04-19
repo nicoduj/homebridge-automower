@@ -3,7 +3,7 @@
   "pluginType": "platform",
   "singular": false,
   "headerDisplay": "This plugin is provided by [nicoduj](https://github.com/nicoduj/)",
-  "footerDisplay": "Support via [paypal](https://www.paypal.me/nicoduj/2.50).",
+  "footerDisplay": "Support via [paypal](https://www.paypal.me/nicoduj/).",
   "schema": {
     "type": "object",
     "required": ["email", "password"],
