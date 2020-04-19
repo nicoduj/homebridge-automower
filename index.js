@@ -88,7 +88,7 @@ myAutoMowerPlatform.prototype = {
           if (result && result instanceof Array && result.length > 0) {
             for (let s = 0; s < result.length; s++) {
               this.log.debug('Mower : ' + JSON.stringify(result[s]));
-              let services = [];
+
               let mowerName = result[s].name;
               let mowerModel = result[s].model;
               let mowerSeriaNumber = result[s].id;
