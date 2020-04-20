@@ -128,7 +128,7 @@ myAutoMowerPlatform.prototype = {
               );
 
               if (!HKBatteryService) {
-                this.log('INFO - Creating  Battery Service ' + mowerName + '/' + mowerName);
+                this.log('INFO - Creating  Battery Service ' + mowerName);
                 HKBatteryService = new Service.BatteryService(
                   mowerName,
                   'BatteryService' + mowerName
@@ -147,7 +147,7 @@ myAutoMowerPlatform.prototype = {
               );
 
               if (!HKFanService) {
-                this.log('INFO - Creating  Fan Service ' + mowerName + '/' + mowerName);
+                this.log('INFO - Creating  Fan Service ' + mowerName);
                 HKFanService = new Service.Fan(mowerName, 'FanService' + mowerName);
                 HKFanService.subtype = 'FanService' + mowerName;
                 myMowerAccessory.addService(HKFanService);
@@ -161,7 +161,7 @@ myAutoMowerPlatform.prototype = {
               );
 
               if (!HKSwitchService) {
-                this.log('INFO - Creating  Switch Service ' + mowerName + '/' + mowerName);
+                this.log('INFO - Creating  Switch Service ' + mowerName);
                 HKSwitchService = new Service.Switch(mowerName, 'SwitchService' + mowerName);
                 HKSwitchService.subtype = 'SwitchService' + mowerName;
                 myMowerAccessory.addService(HKSwitchService);
