@@ -1,5 +1,7 @@
 # Homebridge-automower
 
+[![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
+
 [![npm](https://img.shields.io/npm/v/homebridge-automower.svg)](https://www.npmjs.com/package/homebridge-automower)
 [![npm](https://img.shields.io/npm/dw/homebridge-automower.svg)](https://www.npmjs.com/package/homebridge-automower)
 [![npm](https://img.shields.io/npm/dt/homebridge-automower.svg)](https://www.npmjs.com/package/homebridge-automower)

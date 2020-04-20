@@ -173,9 +173,20 @@ myAutoMowerPlatform.prototype = {
             //timer for background refresh
             this.refreshBackground();
           } else {
-            this.log('ERROR - gettingMowers - no mower found - ' + result);
+            this.log(
+              'ERROR - discoverAutoMowers - no mower found, will retry in 1 minute - ' + result
+            );
+
+            setTimeout(() => {
+              this.discoverAutoMowers();
+            }, 60000);
           }
         });
+      } else {
+        this.log('ERROR - discoverAutoMowers - will retry in 1 minute');
+        setTimeout(() => {
+          this.discoverAutoMowers();
+        }, 60000);
       }
     });
   },

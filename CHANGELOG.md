@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.2.2
+
+- [FIX] automatic attemps to discovery if first one fails
+
 ## 1.2.1
 
 - [FIX] cleanCache option
