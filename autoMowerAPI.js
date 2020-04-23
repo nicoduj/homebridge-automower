@@ -2,15 +2,22 @@ const request = require('request');
 var locks = require('locks');
 var mutex = locks.createMutex();
 
+var EventEmitter = require('events');
+var inherits = require('util').inherits;
+
 module.exports = {
   AutoMowerAPI: AutoMowerAPI,
 };
 
 function AutoMowerAPI(log, platform) {
+  EventEmitter.call(this);
+
   this.log = log;
   this.platform = platform;
   this.login = platform.login;
   this.password = platform.password;
+
+  this.discoverdMowers = [];
 
   this.headers = {
     Accept: 'application/json',
@@ -92,34 +99,42 @@ AutoMowerAPI.prototype = {
     }
   },
 
-  getMowers: function (callback) {
+  getMowers: function () {
     const that = this;
-    request(
-      {
-        url: this.trackApiUrl + 'mowers',
-        method: 'GET',
-        headers: this.headers,
-        json: true,
-      },
-      function (error, response, body) {
-        if (error) {
-          that.log('ERROR - getMowers - retrieving mower - ' + error.message);
-          callback(error);
-        } else if (response && response.statusCode !== 200) {
-          that.log('ERROR - getMowers - No 200 return ' + response.statusCode + '/' + response);
-          callback(error);
-        } else if (body.length > 0) {
-          let mowers = [];
-          body.forEach((mower) => {
-            mowers.push(mower);
-          });
-          callback(mowers);
-        } else {
-          that.log('ERROR - getMowers -No body returned from Automower API');
-          callback('No body');
-        }
+
+    this.authenticate((error) => {
+      if (error) {
+        that.emit('mowersRefreshError');
+      } else {
+        request(
+          {
+            url: this.trackApiUrl + 'mowers',
+            method: 'GET',
+            headers: this.headers,
+            json: true,
+          },
+          function (error, response, body) {
+            if (error) {
+              that.log('ERROR - getMowers - retrieving mower - ' + error.message);
+              that.emit('mowersRefreshError');
+            } else if (response && response.statusCode !== 200) {
+              that.log('ERROR - getMowers - No 200 return ' + response.statusCode + '/' + response);
+              that.emit('mowersRefreshError');
+            } else if (body.length > 0) {
+              let mowers = [];
+              body.forEach((mower) => {
+                mowers.push(mower);
+              });
+              that.discoverdMowers = mowers;
+              that.emit('mowersUpdated');
+            } else {
+              that.log('ERROR - getMowers -No body returned from Automower API');
+              that.emit('mowersRefreshError');
+            }
+          }
+        );
       }
-    );
+    });
   },
 
   sendCommand: function (homebridgeAccessory, command, characteristic, callback) {
@@ -167,6 +182,8 @@ AutoMowerAPI.prototype = {
     });
   },
 };
+
+inherits(AutoMowerAPI, EventEmitter);
 
 //URLS
 //me.trackApiUrl + 'mowers/' + me.mowerID + '/control/start/';
