@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## 1.3.0
 
-- [FIX] better handling of api in order to prevent blocking homekit in case of timeout
+- [FIX] better handling of api in order to prevent blocking homekit in case of timeout #16
 - [NEW] motion sensor that will trigger in case of error of automower (only if you have background refresh or while refreshing )
 
 ## 1.2.2
