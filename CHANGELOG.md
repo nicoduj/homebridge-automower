@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## 1.3.0
 
+**You need to cleanCache if you had installed before, with option cleanCache . Remember to remove it after restart - sorry for that**
+
 - [FIX] better handling of api in order to prevent blocking homekit in case of timeout #16
 - [NEW] motion sensor that will trigger in case of error of automower (only if you have background refresh or while refreshing )
 
