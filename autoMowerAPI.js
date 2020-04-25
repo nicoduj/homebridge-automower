@@ -137,18 +137,13 @@ AutoMowerAPI.prototype = {
     });
   },
 
-  sendCommand: function (homebridgeAccessory, command, characteristic, callback) {
+  sendCommand: function (command, callback) {
     const that = this;
-    var currentValue = characteristic.value;
-    var commandURL;
 
-    commandURL = this.trackApiUrl + 'mowers/' + homebridgeAccessory.mowerID + command;
+    var commandURL = this.trackApiUrl + 'mowers/' + command;
 
     this.authenticate((error) => {
       if (error) {
-        setTimeout(function () {
-          characteristic.updateValue(currentValue);
-        }, 200);
         callback(error);
       } else {
         request(
@@ -163,15 +158,9 @@ AutoMowerAPI.prototype = {
             that.log.debug('INFO - Body received : ' + JSON.stringify(body));
             if (error) {
               that.log(error.message);
-              setTimeout(function () {
-                characteristic.updateValue(currentValue);
-              }, 200);
               callback(error);
             } else if (response && response.statusCode !== 200) {
               that.log('ERROR - sendCommand -  No 200 return ' + response.statusCode);
-              setTimeout(function () {
-                characteristic.updateValue(currentValue);
-              }, 200);
               callback(error);
             } else {
               callback();

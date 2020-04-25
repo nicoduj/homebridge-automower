@@ -333,11 +333,20 @@ myAutoMowerPlatform.prototype = {
   },
   setSwitchOnCharacteristic: function (homebridgeAccessory, characteristic, value, callback) {
     this.log.debug('INFO - setSwitchOnCharacteristic - ' + value);
+
+    var currentValue = characteristic.value;
+    callback();
+
     this.autoMowerAPI.sendCommand(
-      homebridgeAccessory,
-      value ? AutoMowerConst.START_COMMAND : AutoMowerConst.PARK_COMMAND,
-      characteristic,
-      callback
+      homebridgeAccessory.mowerID +
+        (value ? AutoMowerConst.START_COMMAND : AutoMowerConst.PARK_COMMAND),
+      function (error) {
+        if (error) {
+          setTimeout(function () {
+            characteristic.updateValue(currentValue);
+          }, 200);
+        }
+      }
     );
   },
 
@@ -363,11 +372,21 @@ myAutoMowerPlatform.prototype = {
   },
   setMowerOnCharacteristic: function (homebridgeAccessory, characteristic, value, callback) {
     this.log.debug('setMowerOnCharacteristic -' + value);
+
+    var currentValue = characteristic.value;
+
+    callback();
+
     this.autoMowerAPI.sendCommand(
-      homebridgeAccessory,
-      value ? AutoMowerConst.START_COMMAND : AutoMowerConst.PAUSE_COMMAND,
-      characteristic,
-      callback
+      homebridgeAccessory.mowerID +
+        (value ? AutoMowerConst.START_COMMAND : AutoMowerConst.PAUSE_COMMAND),
+      function (error) {
+        if (error) {
+          setTimeout(function () {
+            characteristic.updateValue(currentValue);
+          }, 200);
+        }
+      }
     );
   },
 
