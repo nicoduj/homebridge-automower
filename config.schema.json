@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "HomebridgeAutomower",
+  "pluginAlias": "Automower",
   "pluginType": "platform",
   "singular": false,
   "headerDisplay": "This plugin is provided by [nicoduj](https://github.com/nicoduj/)",

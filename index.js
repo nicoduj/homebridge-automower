@@ -26,6 +26,9 @@ function myAutoMowerPlatform(log, config, api) {
 
   this.loaded = false;
 
+  this._confirmedAccessories = [];
+  this._confirmedServices = [];
+
   this.api
     .on(
       'shutdown',
@@ -42,7 +45,7 @@ function myAutoMowerPlatform(log, config, api) {
           this.log('WARNING - Removing Accessories');
           this.api.unregisterPlatformAccessories(
             'homebridge-automower',
-            'HomebridgeAutomower',
+            'Automower',
             this.foundAccessories
           );
           this.foundAccessories = [];
@@ -58,12 +61,7 @@ module.exports = function (homebridge) {
   Accessory = homebridge.platformAccessory;
   UUIDGen = homebridge.hap.uuid;
   HomebridgeAPI = homebridge;
-  homebridge.registerPlatform(
-    'homebridge-automower',
-    'HomebridgeAutomower',
-    myAutoMowerPlatform,
-    true
-  );
+  homebridge.registerPlatform('homebridge-automower', 'Automower', myAutoMowerPlatform, true);
 };
 
 myAutoMowerPlatform.prototype = {
@@ -78,6 +76,52 @@ myAutoMowerPlatform.prototype = {
     if (this.timerID) {
       clearInterval(this.timerID);
       this.timerID = undefined;
+    }
+  },
+
+  //Cleaning methods
+  cleanPlatform: function () {
+    this.cleanAccessories();
+    this.cleanServices();
+  },
+
+  cleanAccessories: function () {
+    //cleaning accessories
+    let accstoRemove = [];
+    for (let acc of this.foundAccessories) {
+      if (!this._confirmedAccessories.find((x) => x.UUID == acc.UUID)) {
+        accstoRemove.push(acc);
+        this.log('WARNING - Accessory will be Removed ' + acc.UUID + '/' + acc.displayName);
+      }
+    }
+
+    if (accstoRemove.length > 0)
+      this.api.unregisterPlatformAccessories('homebridge-automower', 'Automower', accstoRemove);
+  },
+
+  cleanServices: function () {
+    //cleaning services
+    for (let acc of this.foundAccessories) {
+      let servicestoRemove = [];
+      for (let serv of acc.services) {
+        if (
+          serv.subtype !== undefined &&
+          !this._confirmedServices.find((x) => x.UUID == serv.UUID && x.subtype == serv.subtype)
+        ) {
+          servicestoRemove.push(serv);
+        }
+      }
+      for (let servToDel of servicestoRemove) {
+        this.log(
+          'WARNING - Service Removed' +
+            servToDel.UUID +
+            '/' +
+            servToDel.subtype +
+            '/' +
+            servToDel.displayName
+        );
+        acc.removeService(servToDel);
+      }
     }
   },
 
@@ -108,11 +152,12 @@ myAutoMowerPlatform.prototype = {
 
     if (result && result instanceof Array && result.length > 0) {
       for (let s = 0; s < result.length; s++) {
-        this.log.debug('Mower : ' + JSON.stringify(result[s]));
-
         let mowerName = result[s].name;
         let mowerModel = result[s].model;
         let mowerSeriaNumber = result[s].id;
+
+        this.log('INFO - Discovered Mower : ' + mowerName);
+        this.log.debug('Mower : ' + JSON.stringify(result[s]));
 
         let uuid = UUIDGen.generate(mowerName);
         let myMowerAccessory = this.foundAccessories.find((x) => x.UUID == uuid);
@@ -131,7 +176,7 @@ myAutoMowerPlatform.prototype = {
             .setCharacteristic(Characteristic.Model, myMowerAccessory.model)
             .setCharacteristic(Characteristic.SerialNumber, myMowerAccessory.serialNumber);
 
-          this.api.registerPlatformAccessories('homebridge-automower', 'HomebridgeAutomower', [
+          this.api.registerPlatformAccessories('homebridge-automower', 'Automower', [
             myMowerAccessory,
           ]);
 
@@ -203,7 +248,15 @@ myAutoMowerPlatform.prototype = {
           myMowerAccessory.addService(HKMotionService);
         }
         this.bindMotionCharacteristic(HKMotionService);
+
+        this._confirmedAccessories.push(myMowerAccessory);
+        this._confirmedServices.push(HKBatteryService);
+        this._confirmedServices.push(HKFanService);
+        this._confirmedServices.push(HKSwitchService);
+        this._confirmedServices.push(HKMotionService);
       }
+
+      this.cleanPlatform();
 
       this.updateMowers();
       this.loaded = true;

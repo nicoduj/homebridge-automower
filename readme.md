@@ -34,7 +34,7 @@ Config as below:
 ```json
 "platforms": [
   {
-    "platform": "HomebridgeAutomower",
+    "platform": "Automower",
 	  "email": "toto@titi.com",
     "password": "toto"
   }

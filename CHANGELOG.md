@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.3.2
+
+**Platform Name change - you need to uninstall or modify configuration**
+
+- [NEW] cleaning lost devices from cache
+
 ## 1.3.1
 
 - [FIX] code improvments
