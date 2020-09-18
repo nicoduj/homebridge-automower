@@ -47,5 +47,15 @@
     "hooks": {
       "pre-commit": "pretty-quick --staged"
     }
-  }
+  },
+  "funding": [
+    {
+      "type" : "kofi",
+      "url" : "https://ko-fi.com/nico0089/"
+    },
+    {
+      "type" : "paypal",
+      "url" : "https://www.paypal.me/nicoduj/"
+    }
+  ]
 }
