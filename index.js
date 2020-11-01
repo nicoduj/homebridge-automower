@@ -8,6 +8,29 @@ checkTimer = function (timer) {
   else return timer;
 };
 
+checkParameter = function (parameter, def) {
+  if (parameter == undefined) {
+    return def;
+  } else {
+    if (typeof parameter === 'string') {
+      switch (parameter.toLowerCase().trim()) {
+        case 'true':
+        case 'yes':
+          return true;
+        case 'false':
+        case 'no':
+        case null:
+          return false;
+        case 'undefined':
+        default:
+          return parameter;
+      }
+    } else {
+      return parameter;
+    }
+  }
+};
+
 function myAutoMowerPlatform(log, config, api) {
   if (!config) {
     log('No configuration found for homebridge-automower');
@@ -20,6 +43,13 @@ function myAutoMowerPlatform(log, config, api) {
   this.password = config['password'];
   this.refreshTimer = checkTimer(config['refreshTimer']);
   this.cleanCache = config['cleanCache'];
+
+  this.startStopSwitch = checkParameter(config['startStopSwitch'], true);
+  this.startStopUntilFurtherNoticeSwitch = checkParameter(
+    config['startStopUntilFurtherNoticeSwitch'],
+    false
+  );
+  this.mowersList = config['mowersList'];
 
   this.foundAccessories = [];
   this.autoMowerAPI = new AutoMowerAPI(log, this);
@@ -153,107 +183,133 @@ myAutoMowerPlatform.prototype = {
     if (result && result instanceof Array && result.length > 0) {
       for (let s = 0; s < result.length; s++) {
         let mowerName = result[s].name;
-        let mowerModel = result[s].model;
-        let mowerSeriaNumber = result[s].id;
 
-        this.log('INFO - Discovered Mower : ' + mowerName);
-        this.log.debug('Mower : ' + JSON.stringify(result[s]));
+        if (!this.mowersList || (this.mowersList && this.mowersList.includes(mowerName))) {
+          let mowerModel = result[s].model;
+          let mowerSeriaNumber = result[s].id;
 
-        let uuid = UUIDGen.generate(mowerName);
-        let myMowerAccessory = this.foundAccessories.find((x) => x.UUID == uuid);
+          this.log('INFO - Discovered Mower : ' + mowerName);
+          this.log.debug('Mower : ' + JSON.stringify(result[s]));
 
-        if (!myMowerAccessory) {
-          myMowerAccessory = new Accessory(mowerName, uuid);
-          myMowerAccessory.name = mowerName;
-          myMowerAccessory.model = mowerModel;
-          myMowerAccessory.manufacturer = 'Husqvarna Group';
-          myMowerAccessory.serialNumber = mowerSeriaNumber;
+          let uuid = UUIDGen.generate(mowerName);
+          let myMowerAccessory = this.foundAccessories.find((x) => x.UUID == uuid);
+
+          if (!myMowerAccessory) {
+            myMowerAccessory = new Accessory(mowerName, uuid);
+            myMowerAccessory.name = mowerName;
+            myMowerAccessory.model = mowerModel;
+            myMowerAccessory.manufacturer = 'Husqvarna Group';
+            myMowerAccessory.serialNumber = mowerSeriaNumber;
+            myMowerAccessory.mowerID = mowerSeriaNumber;
+
+            myMowerAccessory
+              .getService(Service.AccessoryInformation)
+              .setCharacteristic(Characteristic.Manufacturer, myMowerAccessory.manufacturer)
+              .setCharacteristic(Characteristic.Model, myMowerAccessory.model)
+              .setCharacteristic(Characteristic.SerialNumber, myMowerAccessory.serialNumber);
+
+            this.api.registerPlatformAccessories('homebridge-automower', 'Automower', [
+              myMowerAccessory,
+            ]);
+
+            this.foundAccessories.push(myMowerAccessory);
+          }
+
           myMowerAccessory.mowerID = mowerSeriaNumber;
+          myMowerAccessory.name = mowerName;
 
-          myMowerAccessory
-            .getService(Service.AccessoryInformation)
-            .setCharacteristic(Characteristic.Manufacturer, myMowerAccessory.manufacturer)
-            .setCharacteristic(Characteristic.Model, myMowerAccessory.model)
-            .setCharacteristic(Characteristic.SerialNumber, myMowerAccessory.serialNumber);
-
-          this.api.registerPlatformAccessories('homebridge-automower', 'Automower', [
-            myMowerAccessory,
-          ]);
-
-          this.foundAccessories.push(myMowerAccessory);
-        }
-
-        myMowerAccessory.mowerID = mowerSeriaNumber;
-        myMowerAccessory.name = mowerName;
-
-        let HKBatteryService = myMowerAccessory.getServiceByUUIDAndSubType(
-          mowerName,
-          'BatteryService' + mowerName
-        );
-
-        if (!HKBatteryService) {
-          this.log('INFO - Creating  Battery Service ' + mowerName);
-          HKBatteryService = new Service.BatteryService(mowerName, 'BatteryService' + mowerName);
-          HKBatteryService.subtype = 'BatteryService' + mowerName;
-          myMowerAccessory.addService(HKBatteryService);
-        }
-
-        this.bindBatteryLevelCharacteristic(HKBatteryService);
-        this.bindChargingStateCharacteristic(HKBatteryService);
-        this.bindStatusLowBatteryCharacteristic(HKBatteryService);
-
-        let HKFanService = myMowerAccessory.getServiceByUUIDAndSubType(
-          'Start/Pause ' + mowerName,
-          'FanService' + mowerName
-        );
-
-        if (!HKFanService) {
-          this.log('INFO - Creating  Fan Service ' + mowerName);
-          HKFanService = new Service.Fan('Start/Pause ' + mowerName, 'FanService' + mowerName);
-          HKFanService.subtype = 'FanService' + mowerName;
-          myMowerAccessory.addService(HKFanService);
-        }
-
-        this.bindFanOnCharacteristic(myMowerAccessory, HKFanService);
-
-        let HKSwitchService = myMowerAccessory.getServiceByUUIDAndSubType(
-          'Start/Park ' + mowerName,
-          'SwitchService' + mowerName
-        );
-
-        if (!HKSwitchService) {
-          this.log('INFO - Creating  Switch Service ' + mowerName);
-          HKSwitchService = new Service.Switch(
-            'Start/Park ' + mowerName,
-            'SwitchService' + mowerName
+          let HKBatteryService = myMowerAccessory.getServiceByUUIDAndSubType(
+            mowerName,
+            'BatteryService' + mowerName
           );
-          HKSwitchService.subtype = 'SwitchService' + mowerName;
-          myMowerAccessory.addService(HKSwitchService);
-        }
 
-        this.bindSwitchOnCharacteristic(myMowerAccessory, HKSwitchService);
+          if (!HKBatteryService) {
+            this.log('INFO - Creating  Battery Service ' + mowerName);
+            HKBatteryService = new Service.BatteryService(mowerName, 'BatteryService' + mowerName);
+            HKBatteryService.subtype = 'BatteryService' + mowerName;
+            myMowerAccessory.addService(HKBatteryService);
+          }
 
-        let HKMotionService = myMowerAccessory.getServiceByUUIDAndSubType(
-          mowerName + ' needs attention',
-          'MotionService' + mowerName
-        );
+          this.bindBatteryLevelCharacteristic(HKBatteryService);
+          this.bindChargingStateCharacteristic(HKBatteryService);
+          this.bindStatusLowBatteryCharacteristic(HKBatteryService);
 
-        if (!HKMotionService) {
-          this.log('INFO - Creating Motion Service ' + mowerName);
-          HKMotionService = new Service.MotionSensor(
+          let HKFanService = myMowerAccessory.getServiceByUUIDAndSubType(
+            'Start/Pause ' + mowerName,
+            'FanService' + mowerName
+          );
+
+          if (!HKFanService) {
+            this.log('INFO - Creating  Fan Service ' + mowerName);
+            HKFanService = new Service.Fan('Start/Pause ' + mowerName, 'FanService' + mowerName);
+            HKFanService.subtype = 'FanService' + mowerName;
+            myMowerAccessory.addService(HKFanService);
+          }
+
+          this.bindFanOnCharacteristic(myMowerAccessory, HKFanService);
+
+          if (this.startStopSwitch) {
+            let HKSwitchService = myMowerAccessory.getServiceByUUIDAndSubType(
+              'Start/Park ' + mowerName,
+              'SwitchService' + mowerName
+            );
+
+            if (!HKSwitchService) {
+              this.log('INFO - Creating  Switch Service ' + mowerName);
+              HKSwitchService = new Service.Switch(
+                'Start/Park ' + mowerName,
+                'SwitchService' + mowerName
+              );
+              HKSwitchService.subtype = 'SwitchService' + mowerName;
+              myMowerAccessory.addService(HKSwitchService);
+            }
+
+            this.bindSwitchOnCharacteristic(myMowerAccessory, HKSwitchService);
+            this._confirmedServices.push(HKSwitchService);
+          }
+
+          if (this.startStopUntilFurtherNoticeSwitch) {
+            let HKSwitch2Service = myMowerAccessory.getServiceByUUIDAndSubType(
+              'Start/ParkUntilResume ' + mowerName,
+              'SwitchService2' + mowerName
+            );
+
+            if (!HKSwitch2Service) {
+              this.log('INFO - Creating  Switch Service ' + mowerName);
+              HKSwitch2Service = new Service.Switch(
+                'ParkUntilResume ' + mowerName,
+                'SwitchService2' + mowerName
+              );
+              HKSwitch2Service.subtype = 'SwitchService2' + mowerName;
+              myMowerAccessory.addService(HKSwitch2Service);
+            }
+
+            this.bindSwitchOn2Characteristic(myMowerAccessory, HKSwitch2Service);
+            this._confirmedServices.push(HKSwitch2Service);
+          }
+
+          let HKMotionService = myMowerAccessory.getServiceByUUIDAndSubType(
             mowerName + ' needs attention',
             'MotionService' + mowerName
           );
-          HKMotionService.subtype = 'MotionService' + mowerName;
-          myMowerAccessory.addService(HKMotionService);
-        }
-        this.bindMotionCharacteristic(HKMotionService);
 
-        this._confirmedAccessories.push(myMowerAccessory);
-        this._confirmedServices.push(HKBatteryService);
-        this._confirmedServices.push(HKFanService);
-        this._confirmedServices.push(HKSwitchService);
-        this._confirmedServices.push(HKMotionService);
+          if (!HKMotionService) {
+            this.log('INFO - Creating Motion Service ' + mowerName);
+            HKMotionService = new Service.MotionSensor(
+              mowerName + ' needs attention',
+              'MotionService' + mowerName
+            );
+            HKMotionService.subtype = 'MotionService' + mowerName;
+            myMowerAccessory.addService(HKMotionService);
+          }
+          this.bindMotionCharacteristic(HKMotionService);
+
+          this._confirmedAccessories.push(myMowerAccessory);
+          this._confirmedServices.push(HKBatteryService);
+          this._confirmedServices.push(HKFanService);
+
+          this._confirmedServices.push(HKMotionService);
+        }
       }
 
       this.cleanPlatform();
@@ -317,17 +373,16 @@ myAutoMowerPlatform.prototype = {
 
   getChargingState(homebridgeAccessory, result) {
     var charging = 0;
-
     if (
       result &&
       result.status &&
       result.status.connected &&
-      (result.batteryPercent < 100 ||
+      (result.status.batteryPercent < 100 ||
         result.status.mowerStatus.activity.startsWith(AutoMowerConst.CHARGING))
     ) {
       charging = 1;
     }
-
+    this.log.debug('INFO - getChargingState -' + charging);
     return charging;
   },
 
@@ -344,7 +399,7 @@ myAutoMowerPlatform.prototype = {
   isLowBattery(homebridgeAccessory, result) {
     var lowww = 0;
 
-    if (result && result.status && result.batteryPercent < 20) {
+    if (result && result.status && result.status.batteryPercent < 20) {
       lowww = 1;
     }
 
@@ -403,6 +458,22 @@ myAutoMowerPlatform.prototype = {
     );
   },
 
+  setSwitchOn2Characteristic: function (homebridgeAccessory, characteristic, value, callback) {
+    this.log.debug('INFO - setSwitchOn2Characteristic - ' + value);
+
+    var currentValue = characteristic.value;
+    callback();
+
+    this.autoMowerAPI.sendCommand(
+      homebridgeAccessory.mowerID + AutoMowerConst.PARK_COMMAND_UFN,
+      function (error) {
+        setTimeout(function () {
+          characteristic.updateValue(false);
+        }, 200);
+      }
+    );
+  },
+
   isMowing(homebridgeAccessory, result) {
     var mowing = 0;
 
@@ -410,6 +481,11 @@ myAutoMowerPlatform.prototype = {
       let status = result.status.mowerStatus.activity;
       if (status.startsWith(AutoMowerConst.MOWING)) mowing = 1;
       else if (status.startsWith(AutoMowerConst.STOPPED_IN_GARDEN)) mowing = -1;
+      else if (
+        result.status.mowerStatus.state &&
+        result.status.mowerStatus.state.startsWith(AutoMowerConst.FATAL_ERROR)
+      )
+        mowing = -1;
     }
 
     return mowing;
@@ -514,6 +590,28 @@ myAutoMowerPlatform.prototype = {
       );
   },
 
+  bindSwitchOn2Characteristic: function (homebridgeAccessory, service) {
+    service
+      .getCharacteristic(Characteristic.On)
+      .on(
+        'get',
+        function (callback) {
+          callback(false);
+        }.bind(this)
+      )
+      .on(
+        'set',
+        function (value, callback) {
+          this.setSwitchOn2Characteristic(
+            homebridgeAccessory,
+            service.getCharacteristic(Characteristic.On),
+            value,
+            callback
+          );
+        }.bind(this)
+      );
+  },
+
   bindMotionCharacteristic(service) {
     service.getCharacteristic(Characteristic.MotionDetected).on(
       'get',
@@ -549,6 +647,17 @@ myAutoMowerPlatform.prototype = {
       );
     }
 
+    let HKSwitchService2 = myAutoMowerAccessory.getServiceByUUIDAndSubType(
+      'Start/ParkUntilResume ' + mowerName,
+      'SwitchService2' + mowerName
+    );
+
+    if (HKSwitchService2) {
+      HKSwitchService2.getCharacteristic(Characteristic.On).updateValue(
+        this.isInOperation(myAutoMowerAccessory, result)
+      );
+    }
+
     let HKFanService = myAutoMowerAccessory.getServiceByUUIDAndSubType(
       'Start/Pause ' + mowerName,
       'FanService' + mowerName
@@ -558,14 +667,19 @@ myAutoMowerPlatform.prototype = {
       let isMowing = this.isMowing(myAutoMowerAccessory, result);
       HKFanService.getCharacteristic(Characteristic.On).updateValue(isMowing > 0 ? true : false);
 
+      let HKMotionService = myAutoMowerAccessory.getServiceByUUIDAndSubType(
+        mowerName + ' needs attention',
+        'MotionService' + mowerName
+      );
+
       //handling error
-      if (isMowing < 0) {
-        let HKMotionService = myMowerAccessory.getServiceByUUIDAndSubType(
-          mowerName + ' needs attention',
-          'MotionService' + mowerName
-        );
-        if (HKMotionService) {
+      if (HKMotionService) {
+        if (isMowing < 0) {
           HKMotionService.getCharacteristic(Characteristic.MotionDetected).updateValue(true);
+          this.log.debug('INFO - MotionDetected');
+        } else if (HKMotionService.getCharacteristic(Characteristic.MotionDetected).value) {
+          HKMotionService.getCharacteristic(Characteristic.MotionDetected).updateValue(false);
+          this.log.debug('INFO - MotionDetected reset ');
         }
       }
     }

@@ -23,6 +23,23 @@
         "minimum": 30,
         "maximum": 600,
         "description": "Enable refresh of autoMower state every X seconds, for automation purpose if you need to activate something else based on its state change (defaults : disable, accepted range : 30-600s)"
+      },
+      "startStopSwitch": {
+        "title": "switch to handle start / stop until next period",
+        "type": "boolean",
+        "default": true
+      },
+      "startStopUntilFurtherNoticeSwitch": {
+        "title": "switch to handle start / stop until further notice",
+        "type": "boolean",
+        "default": false
+      },
+      "mowersList": {
+        "type": "array",
+        "items": {
+          "title": "Mower name",
+          "type": "string"
+        }
       }
     }
   },

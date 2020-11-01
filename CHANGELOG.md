@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.4.0
+
+- [NEW] #21 Add a switch to handle start / stop until further notice
+- [FIX] #25 Lifted error not indicated
+- [FIX] #24 Parked also means charging
+- [NEW] #23 select which mower to use
+
 ## 1.3.2
 
 **Platform Name change - you need to uninstall or modify configuration**

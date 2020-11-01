@@ -3,6 +3,7 @@ var locks = require('locks');
 var mutex = locks.createMutex();
 
 var EventEmitter = require('events');
+const autoMowerConst = require('./autoMowerConst');
 var inherits = require('util').inherits;
 
 module.exports = {
@@ -140,6 +141,8 @@ AutoMowerAPI.prototype = {
   sendCommand: function (command, callback) {
     const that = this;
 
+    var bodyToSend = {};
+
     var commandURL = this.trackApiUrl + 'mowers/' + command;
 
     this.authenticate((error) => {
@@ -150,6 +153,7 @@ AutoMowerAPI.prototype = {
           {
             url: commandURL,
             method: 'POST',
+            body: bodyToSend,
             headers: that.headers,
             json: true,
           },

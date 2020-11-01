@@ -47,6 +47,9 @@ Fields:
 - `email` email used for your automower account (required).
 - `password` password of your automower account (required).
 - `refreshTimer` Optional - enable refresh of autoMower state every X seconds, for automation purpose if you need to activate something else based on its state change (defaults : disable, accepted range : 30-600s).
+- `startStopSwitch` switch to handle start / stop until next period (optional - default true).
+- `startStopUntilFurtherNoticeSwitch` stateless switch to handle stop until further notice (optional - default false).
+- `mowersList` list of mowers to expose (optional - default all).
 - `cleanCache` Set it to true in case you want to remove the cached accessory (only those from this plugin). You have to restart homebridge after applying the option. Remove it after restart, otherwise it will be recreated at each startup.
 
 ## Changelog
