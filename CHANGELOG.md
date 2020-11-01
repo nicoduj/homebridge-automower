@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.4.1
+
+- [FIX] #invalid charging state
+
 ## 1.4.0
 
 - [NEW] #21 Add a switch to handle start / stop until further notice
