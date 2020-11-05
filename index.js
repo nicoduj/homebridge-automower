@@ -270,17 +270,17 @@ myAutoMowerPlatform.prototype = {
 
           if (this.startStopUntilFurtherNoticeSwitch) {
             let HKSwitch2Service = myMowerAccessory.getServiceByUUIDAndSubType(
-              'Start/ParkUntilResume ' + mowerName,
-              'SwitchService2' + mowerName
+              'ParkUntilResume ' + mowerName,
+              'SwitchServicePark' + mowerName
             );
 
             if (!HKSwitch2Service) {
               this.log('INFO - Creating  Switch Service ' + mowerName);
               HKSwitch2Service = new Service.Switch(
                 'ParkUntilResume ' + mowerName,
-                'SwitchService2' + mowerName
+                'SwitchServicePark' + mowerName
               );
-              HKSwitch2Service.subtype = 'SwitchService2' + mowerName;
+              HKSwitch2Service.subtype = 'SwitchServicePark' + mowerName;
               myMowerAccessory.addService(HKSwitch2Service);
             }
 
