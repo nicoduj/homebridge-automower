@@ -1,6 +1,6 @@
 const request = require('request');
-var locks = require('locks');
-var mutex = locks.createMutex();
+//var locks = require('locks');
+//var mutex = locks.createMutex();
 
 var EventEmitter = require('events');
 const autoMowerConst = require('./autoMowerConst');
@@ -53,47 +53,47 @@ AutoMowerAPI.prototype = {
 
       var that = this;
 
-      mutex.lock(function () {
-        request(
-          {
-            url: that.imApiUrl + 'token',
-            method: 'POST',
-            headers: that.headers,
-            body: jsonBody,
-            json: true,
-          },
-          function (error, response, body) {
-            mutex.unlock();
+      //mutex.lock(function () {
+      request(
+        {
+          url: that.imApiUrl + 'token',
+          method: 'POST',
+          headers: that.headers,
+          body: jsonBody,
+          json: true,
+        },
+        function (error, response, body) {
+          //mutex.unlock();
 
-            if (error) {
-              that.log(error.message);
-              callback(error);
-            } else if (response && response.statusCode !== 201) {
-              that.log(
-                'ERROR - authenticate - No 201 return ' +
-                  response.statusCode +
-                  '/' +
-                  JSON.stringify(response)
-              );
-              callback('No 201');
-            } else if (body && body.data) {
-              that.token = body.data.id;
-              that.tokenProvider = body.data.attributes.provider;
-              that.loginExpiry = body.data.attributes.expires_in;
-              that.loginExpires = new Date();
-              that.loginExpires.setMilliseconds(
-                that.loginExpires.getMilliseconds() + that.loginExpiry - 30000
-              );
-              that.headers['Authorization'] = 'Bearer ' + that.token;
-              that.headers['Authorization-Provider'] = that.tokenProvider;
-              callback();
-            } else {
-              that.log('ERROR - authenticate - No body');
-              callback('No body');
-            }
+          if (error) {
+            that.log(error.message);
+            callback(error);
+          } else if (response && response.statusCode !== 201) {
+            that.log(
+              'ERROR - authenticate - No 201 return ' +
+                response.statusCode +
+                '/' +
+                JSON.stringify(response)
+            );
+            callback('No 201');
+          } else if (body && body.data) {
+            that.token = body.data.id;
+            that.tokenProvider = body.data.attributes.provider;
+            that.loginExpiry = body.data.attributes.expires_in;
+            that.loginExpires = new Date();
+            that.loginExpires.setMilliseconds(
+              that.loginExpires.getMilliseconds() + that.loginExpiry - 30000
+            );
+            that.headers['Authorization'] = 'Bearer ' + that.token;
+            that.headers['Authorization-Provider'] = that.tokenProvider;
+            callback();
+          } else {
+            that.log('ERROR - authenticate - No body');
+            callback('No body');
           }
-        );
-      });
+        }
+      );
+      //});
     } else {
       this.log.debug('INFO - allready authenticate expiration : ' + this.loginExpires + '-' + dte);
       callback();
@@ -103,9 +103,14 @@ AutoMowerAPI.prototype = {
   getMowers: function () {
     const that = this;
 
+    if (this.inProgress) return;
+
+    this.inProgress = true;
+
     this.authenticate((error) => {
       if (error) {
         that.emit('mowersRefreshError');
+        that.inProgress = false;
       } else {
         request(
           {
@@ -132,6 +137,7 @@ AutoMowerAPI.prototype = {
               that.log('ERROR - getMowers -No body returned from Automower API');
               that.emit('mowersRefreshError');
             }
+            that.inProgress = false;
           }
         );
       }
