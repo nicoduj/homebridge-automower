@@ -24,6 +24,9 @@
     "automower",
     "homekit"
   ],
+  "dependencies": {
+    "request": "^2.88.2"
+  },
   "bugs": {
     "url": "https://github.com/nicoduj/homebridge-automower/issues"
   },
