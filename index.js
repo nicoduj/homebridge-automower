@@ -185,7 +185,7 @@ myAutoMowerPlatform.prototype = {
         let mowerName = result[s].name;
 
         if (!this.mowersList || (this.mowersList && this.mowersList.includes(mowerName))) {
-          let mowerModel = result[s].model;
+          let mowerModel = result[s].model + '-' + result[s].variant;
           let mowerSeriaNumber = result[s].id;
 
           this.log('INFO - Discovered Mower : ' + mowerName);
@@ -197,26 +197,22 @@ myAutoMowerPlatform.prototype = {
           if (!myMowerAccessory) {
             myMowerAccessory = new Accessory(mowerName, uuid);
             myMowerAccessory.name = mowerName;
-            myMowerAccessory.model = mowerModel;
-            myMowerAccessory.manufacturer = 'Husqvarna Group';
-            myMowerAccessory.serialNumber = mowerSeriaNumber;
-            myMowerAccessory.mowerID = mowerSeriaNumber;
-
-            myMowerAccessory
-              .getService(Service.AccessoryInformation)
-              .setCharacteristic(Characteristic.Manufacturer, myMowerAccessory.manufacturer)
-              .setCharacteristic(Characteristic.Model, myMowerAccessory.model)
-              .setCharacteristic(Characteristic.SerialNumber, myMowerAccessory.serialNumber);
-
             this.api.registerPlatformAccessories('homebridge-automower', 'Automower', [
               myMowerAccessory,
             ]);
-
             this.foundAccessories.push(myMowerAccessory);
           }
-
+          myMowerAccessory.model = mowerModel;
+          myMowerAccessory.manufacturer = 'Husqvarna Group';
+          myMowerAccessory.serialNumber = mowerSeriaNumber;
           myMowerAccessory.mowerID = mowerSeriaNumber;
           myMowerAccessory.name = mowerName;
+
+          myMowerAccessory
+            .getService(Service.AccessoryInformation)
+            .setCharacteristic(Characteristic.Manufacturer, myMowerAccessory.manufacturer)
+            .setCharacteristic(Characteristic.Model, myMowerAccessory.model)
+            .setCharacteristic(Characteristic.SerialNumber, myMowerAccessory.serialNumber);
 
           let HKBatteryService = myMowerAccessory.getServiceByUUIDAndSubType(
             mowerName,
@@ -597,7 +593,7 @@ myAutoMowerPlatform.prototype = {
       .on(
         'get',
         function (callback) {
-          callback(false);
+          callback(undefined, false);
         }.bind(this)
       )
       .on(
@@ -617,7 +613,7 @@ myAutoMowerPlatform.prototype = {
     service.getCharacteristic(Characteristic.MotionDetected).on(
       'get',
       function (callback) {
-        callback(false);
+        callback(undefined, false);
       }.bind(this)
     );
   },

@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.4.3
+
+- [FIX] warning homebridge 1.3
+
 ## 1.4.2
 
 - [FIX] duplicate accessory after restart
