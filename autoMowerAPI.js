@@ -1,47 +1,38 @@
-const request = require('request');
-//var locks = require('locks');
-//var mutex = locks.createMutex();
+import request from 'request';
+import {EventEmitter} from 'events';
 
-var EventEmitter = require('events');
-const autoMowerConst = require('./autoMowerConst');
-var inherits = require('util').inherits;
+export class AutoMowerAPI extends EventEmitter {
+  constructor(log, platform) {
+    super();
 
-module.exports = {
-  AutoMowerAPI: AutoMowerAPI,
-};
+    this.log = log;
+    this.platform = platform;
+    this.login = platform.login;
+    this.password = platform.password;
 
-function AutoMowerAPI(log, platform) {
-  EventEmitter.call(this);
+    this.discoverdMowers = [];
 
-  this.log = log;
-  this.platform = platform;
-  this.login = platform.login;
-  this.password = platform.password;
+    this.headers = {
+      Accept: 'application/json',
+      'Content-type': 'application/json',
+    };
 
-  this.discoverdMowers = [];
+    this.imApiUrl = 'https://iam-api.dss.husqvarnagroup.net/api/v3/';
+    this.trackApiUrl = 'https://amc-api.dss.husqvarnagroup.net/app/v1/';
+  }
 
-  this.headers = {
-    Accept: 'application/json',
-    'Content-type': 'application/json',
-  };
-
-  this.imApiUrl = 'https://iam-api.dss.husqvarnagroup.net/api/v3/';
-  this.trackApiUrl = 'https://amc-api.dss.husqvarnagroup.net/app/v1/';
-}
-
-AutoMowerAPI.prototype = {
-  logResult: function (result) {
+  logResult(result) {
     this.log.debug('INFO - mower status : ' + JSON.stringify(result.status));
     this.log.debug('INFO - mower activity : ' + result.status.mowerStatus.activity);
-  },
+  }
 
-  authenticate: function (callback) {
-    var dte = new Date();
+  authenticate(callback) {
+    const dte = new Date();
 
     if (!this.token || (this.token && this.loginExpires && this.loginExpires < dte)) {
       this.log.debug('INFO - authenticating');
 
-      var jsonBody = {
+      const jsonBody = {
         data: {
           attributes: {
             password: this.password,
@@ -51,9 +42,8 @@ AutoMowerAPI.prototype = {
         },
       };
 
-      var that = this;
+      const that = this;
 
-      //mutex.lock(function () {
       request(
         {
           url: that.imApiUrl + 'token',
@@ -63,8 +53,6 @@ AutoMowerAPI.prototype = {
           json: true,
         },
         function (error, response, body) {
-          //mutex.unlock();
-
           if (error) {
             that.log(error.message);
             callback(error);
@@ -93,14 +81,13 @@ AutoMowerAPI.prototype = {
           }
         }
       );
-      //});
     } else {
       this.log.debug('INFO - allready authenticate expiration : ' + this.loginExpires + '-' + dte);
       callback();
     }
-  },
+  }
 
-  getMowers: function () {
+  getMowers() {
     const that = this;
 
     if (this.inProgress) return;
@@ -127,7 +114,7 @@ AutoMowerAPI.prototype = {
               that.log('ERROR - getMowers - No 200 return ' + response.statusCode + '/' + response);
               that.emit('mowersRefreshError');
             } else if (body.length > 0) {
-              let mowers = [];
+              const mowers = [];
               body.forEach((mower) => {
                 mowers.push(mower);
               });
@@ -142,14 +129,12 @@ AutoMowerAPI.prototype = {
         );
       }
     });
-  },
+  }
 
-  sendCommand: function (command, callback) {
+  sendCommand(command, callback) {
     const that = this;
-
-    var bodyToSend = {};
-
-    var commandURL = this.trackApiUrl + 'mowers/' + command;
+    const bodyToSend = {};
+    const commandURL = this.trackApiUrl + 'mowers/' + command;
 
     this.authenticate((error) => {
       if (error) {
@@ -179,10 +164,8 @@ AutoMowerAPI.prototype = {
         );
       }
     });
-  },
-};
-
-inherits(AutoMowerAPI, EventEmitter);
+  }
+}
 
 //URLS
 //me.trackApiUrl + 'mowers/' + me.mowerID + '/control/start/';

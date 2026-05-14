@@ -1,14 +1,14 @@
-var Service, Characteristic, Accessory, UUIDGen;
+import {AutoMowerAPI} from './autoMowerAPI.js';
+import * as AutoMowerConst from './autoMowerConst.js';
 
-var AutoMowerAPI = require('./autoMowerAPI.js').AutoMowerAPI;
-const AutoMowerConst = require('./autoMowerConst');
+let Service, Characteristic, Accessory, UUIDGen, HomebridgeAPI;
 
-checkTimer = function (timer) {
+const checkTimer = function (timer) {
   if (timer && timer > 0 && (timer < 30 || timer > 600)) return 300;
   else return timer;
 };
 
-checkParameter = function (parameter, def) {
+const checkParameter = function (parameter, def) {
   if (parameter == undefined) {
     return def;
   } else {
@@ -85,14 +85,14 @@ function myAutoMowerPlatform(log, config, api) {
     );
 }
 
-module.exports = function (homebridge) {
+export default function (homebridge) {
   Service = homebridge.hap.Service;
   Characteristic = homebridge.hap.Characteristic;
   Accessory = homebridge.platformAccessory;
   UUIDGen = homebridge.hap.uuid;
   HomebridgeAPI = homebridge;
   homebridge.registerPlatform('homebridge-automower', 'Automower', myAutoMowerPlatform, true);
-};
+}
 
 myAutoMowerPlatform.prototype = {
   configureAccessory: function (accessory) {
@@ -214,14 +214,14 @@ myAutoMowerPlatform.prototype = {
             .setCharacteristic(Characteristic.Model, myMowerAccessory.model)
             .setCharacteristic(Characteristic.SerialNumber, myMowerAccessory.serialNumber);
 
-          let HKBatteryService = myMowerAccessory.getServiceByUUIDAndSubType(
+          let HKBatteryService = myMowerAccessory.getServiceById(
             mowerName,
             'BatteryService' + mowerName
           );
 
           if (!HKBatteryService) {
             this.log('INFO - Creating  Battery Service ' + mowerName);
-            HKBatteryService = new Service.BatteryService(mowerName, 'BatteryService' + mowerName);
+            HKBatteryService = new Service.Battery(mowerName, 'BatteryService' + mowerName);
             HKBatteryService.subtype = 'BatteryService' + mowerName;
             myMowerAccessory.addService(HKBatteryService);
           }
@@ -230,14 +230,14 @@ myAutoMowerPlatform.prototype = {
           this.bindChargingStateCharacteristic(HKBatteryService);
           this.bindStatusLowBatteryCharacteristic(HKBatteryService);
 
-          let HKFanService = myMowerAccessory.getServiceByUUIDAndSubType(
-            'Start/Pause ' + mowerName,
+          let HKFanService = myMowerAccessory.getServiceById(
+            'Start-Pause ' + mowerName,
             'FanService' + mowerName
           );
 
           if (!HKFanService) {
             this.log('INFO - Creating  Fan Service ' + mowerName);
-            HKFanService = new Service.Fan('Start/Pause ' + mowerName, 'FanService' + mowerName);
+            HKFanService = new Service.Fan('Start-Pause ' + mowerName, 'FanService' + mowerName);
             HKFanService.subtype = 'FanService' + mowerName;
             myMowerAccessory.addService(HKFanService);
           }
@@ -245,15 +245,15 @@ myAutoMowerPlatform.prototype = {
           this.bindFanOnCharacteristic(myMowerAccessory, HKFanService);
 
           if (this.startStopSwitch) {
-            let HKSwitchService = myMowerAccessory.getServiceByUUIDAndSubType(
-              'Start/Park ' + mowerName,
+            let HKSwitchService = myMowerAccessory.getServiceById(
+              'Start-Park ' + mowerName,
               'SwitchService' + mowerName
             );
 
             if (!HKSwitchService) {
               this.log('INFO - Creating  Switch Service ' + mowerName);
               HKSwitchService = new Service.Switch(
-                'Start/Park ' + mowerName,
+                'Start-Park ' + mowerName,
                 'SwitchService' + mowerName
               );
               HKSwitchService.subtype = 'SwitchService' + mowerName;
@@ -265,7 +265,7 @@ myAutoMowerPlatform.prototype = {
           }
 
           if (this.startStopUntilFurtherNoticeSwitch) {
-            let HKSwitch2Service = myMowerAccessory.getServiceByUUIDAndSubType(
+            let HKSwitch2Service = myMowerAccessory.getServiceById(
               'ParkUntilResume ' + mowerName,
               'SwitchServicePark' + mowerName
             );
@@ -284,7 +284,7 @@ myAutoMowerPlatform.prototype = {
             this._confirmedServices.push(HKSwitch2Service);
           }
 
-          let HKMotionService = myMowerAccessory.getServiceByUUIDAndSubType(
+          let HKMotionService = myMowerAccessory.getServiceById(
             mowerName + ' needs attention',
             'MotionService' + mowerName
           );
@@ -633,8 +633,8 @@ myAutoMowerPlatform.prototype = {
 
     this.autoMowerAPI.logResult(result);
 
-    let HKSwitchService = myAutoMowerAccessory.getServiceByUUIDAndSubType(
-      'Start/Park ' + mowerName,
+    let HKSwitchService = myAutoMowerAccessory.getServiceById(
+      'Start-Park ' + mowerName,
       'SwitchService' + mowerName
     );
 
@@ -644,8 +644,8 @@ myAutoMowerPlatform.prototype = {
       );
     }
 
-    let HKSwitchService2 = myAutoMowerAccessory.getServiceByUUIDAndSubType(
-      'Start/ParkUntilResume ' + mowerName,
+    let HKSwitchService2 = myAutoMowerAccessory.getServiceById(
+      'Start-ParkUntilResume ' + mowerName,
       'SwitchService2' + mowerName
     );
 
@@ -655,8 +655,8 @@ myAutoMowerPlatform.prototype = {
       );
     }
 
-    let HKFanService = myAutoMowerAccessory.getServiceByUUIDAndSubType(
-      'Start/Pause ' + mowerName,
+    let HKFanService = myAutoMowerAccessory.getServiceById(
+      'Start-Pause ' + mowerName,
       'FanService' + mowerName
     );
 
@@ -664,7 +664,7 @@ myAutoMowerPlatform.prototype = {
       let isMowing = this.isMowing(myAutoMowerAccessory, result);
       HKFanService.getCharacteristic(Characteristic.On).updateValue(isMowing > 0 ? true : false);
 
-      let HKMotionService = myAutoMowerAccessory.getServiceByUUIDAndSubType(
+      let HKMotionService = myAutoMowerAccessory.getServiceById(
         mowerName + ' needs attention',
         'MotionService' + mowerName
       );
@@ -681,7 +681,7 @@ myAutoMowerPlatform.prototype = {
       }
     }
 
-    let HKBatteryService = myAutoMowerAccessory.getServiceByUUIDAndSubType(
+    let HKBatteryService = myAutoMowerAccessory.getServiceById(
       mowerName,
       'BatteryService' + mowerName
     );
