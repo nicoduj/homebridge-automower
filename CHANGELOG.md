@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.0.0
+
+- [FIX] HB 2 compatibility
+
 ## 1.4.4
 
 - [FIX] preventing multiple simultaneous auth / refresh
