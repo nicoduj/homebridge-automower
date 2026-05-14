@@ -1,6 +1,6 @@
 {
   "name": "homebridge-automower",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "author": "Nicolas Dujardin",
   "description": "Publish your automower as an homekit accessory",
   "type": "module",
