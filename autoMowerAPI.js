@@ -1,4 +1,4 @@
-import request from 'request';
+import got from 'got';
 import {EventEmitter} from 'events';
 
 export class AutoMowerAPI extends EventEmitter {
@@ -44,24 +44,17 @@ export class AutoMowerAPI extends EventEmitter {
 
       const that = this;
 
-      request(
-        {
-          url: that.imApiUrl + 'token',
-          method: 'POST',
+      got
+        .post(that.imApiUrl + 'token', {
           headers: that.headers,
-          body: jsonBody,
-          json: true,
-        },
-        function (error, response, body) {
-          if (error) {
-            that.log(error.message);
-            callback(error);
-          } else if (response && response.statusCode !== 201) {
+          json: jsonBody,
+          responseType: 'json',
+          throwHttpErrors: false,
+        })
+        .then(({statusCode, body}) => {
+          if (statusCode !== 201) {
             that.log(
-              'ERROR - authenticate - No 201 return ' +
-                response.statusCode +
-                '/' +
-                JSON.stringify(response)
+              'ERROR - authenticate - No 201 return ' + statusCode + '/' + JSON.stringify(body)
             );
             callback('No 201');
           } else if (body && body.data) {
@@ -79,8 +72,11 @@ export class AutoMowerAPI extends EventEmitter {
             that.log('ERROR - authenticate - No body');
             callback('No body');
           }
-        }
-      );
+        })
+        .catch((error) => {
+          that.log(error.message);
+          callback(error);
+        });
     } else {
       this.log.debug('INFO - allready authenticate expiration : ' + this.loginExpires + '-' + dte);
       callback();
@@ -99,34 +95,30 @@ export class AutoMowerAPI extends EventEmitter {
         that.emit('mowersRefreshError');
         that.inProgress = false;
       } else {
-        request(
-          {
-            url: this.trackApiUrl + 'mowers',
-            method: 'GET',
+        got
+          .get(this.trackApiUrl + 'mowers', {
             headers: this.headers,
-            json: true,
-          },
-          function (error, response, body) {
-            if (error) {
-              that.log('ERROR - getMowers - retrieving mower - ' + error.message);
+            responseType: 'json',
+            throwHttpErrors: false,
+          })
+          .then(({statusCode, body}) => {
+            if (statusCode !== 200) {
+              that.log('ERROR - getMowers - No 200 return ' + statusCode + '/' + body);
               that.emit('mowersRefreshError');
-            } else if (response && response.statusCode !== 200) {
-              that.log('ERROR - getMowers - No 200 return ' + response.statusCode + '/' + response);
-              that.emit('mowersRefreshError');
-            } else if (body.length > 0) {
-              const mowers = [];
-              body.forEach((mower) => {
-                mowers.push(mower);
-              });
-              that.discoverdMowers = mowers;
+            } else if (Array.isArray(body) && body.length > 0) {
+              that.discoverdMowers = [...body];
               that.emit('mowersUpdated');
             } else {
               that.log('ERROR - getMowers -No body returned from Automower API');
               that.emit('mowersRefreshError');
             }
             that.inProgress = false;
-          }
-        );
+          })
+          .catch((requestError) => {
+            that.log('ERROR - getMowers - retrieving mower - ' + requestError.message);
+            that.emit('mowersRefreshError');
+            that.inProgress = false;
+          });
       }
     });
   }
@@ -140,28 +132,27 @@ export class AutoMowerAPI extends EventEmitter {
       if (error) {
         callback(error);
       } else {
-        request(
-          {
-            url: commandURL,
-            method: 'POST',
-            body: bodyToSend,
+        got
+          .post(commandURL, {
             headers: that.headers,
-            json: true,
-          },
-          function (error, response, body) {
+            json: bodyToSend,
+            responseType: 'json',
+            throwHttpErrors: false,
+          })
+          .then(({statusCode, body}) => {
             that.log('INFO - Command sent : ' + commandURL);
             that.log.debug('INFO - Body received : ' + JSON.stringify(body));
-            if (error) {
-              that.log(error.message);
-              callback(error);
-            } else if (response && response.statusCode !== 200) {
-              that.log('ERROR - sendCommand -  No 200 return ' + response.statusCode);
-              callback(error);
+            if (statusCode !== 200) {
+              that.log('ERROR - sendCommand -  No 200 return ' + statusCode);
+              callback('No 200');
             } else {
               callback();
             }
-          }
-        );
+          })
+          .catch((requestError) => {
+            that.log(requestError.message);
+            callback(requestError);
+          });
       }
     });
   }
