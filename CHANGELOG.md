@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.0.2
+
+- [FIX] incorrect naming of switch / services while adding
+- [FIX] default icon to fan instead of motion sensor
+
 ## 2.0.1
 
 - [FIX] moving from request to got

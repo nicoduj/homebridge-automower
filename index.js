@@ -230,19 +230,26 @@ myAutoMowerPlatform.prototype = {
           this.bindChargingStateCharacteristic(HKBatteryService);
           this.bindStatusLowBatteryCharacteristic(HKBatteryService);
 
-          let HKFanService = myMowerAccessory.getServiceById(
-            'Start-Pause ' + mowerName,
-            'FanService' + mowerName
+          let HKMotionService = myMowerAccessory.getServiceById(
+            mowerName + ' needs attention',
+            'MotionService' + mowerName
           );
 
-          if (!HKFanService) {
-            this.log('INFO - Creating  Fan Service ' + mowerName);
-            HKFanService = new Service.Fan('Start-Pause ' + mowerName, 'FanService' + mowerName);
-            HKFanService.subtype = 'FanService' + mowerName;
-            myMowerAccessory.addService(HKFanService);
+          if (!HKMotionService) {
+            this.log('INFO - Creating Motion Service ' + mowerName);
+            HKMotionService = new Service.MotionSensor(
+              mowerName + ' needs attention',
+              'MotionService' + mowerName
+            );
+            HKMotionService.subtype = 'MotionService' + mowerName;
+            HKMotionService.addOptionalCharacteristic(Characteristic.ConfiguredName);
+            HKMotionService.setCharacteristic(
+              Characteristic.ConfiguredName,
+              mowerName + ' needs attention'
+            );
+            myMowerAccessory.addService(HKMotionService);
           }
-
-          this.bindFanOnCharacteristic(myMowerAccessory, HKFanService);
+          this.bindMotionCharacteristic(HKMotionService);
 
           if (this.startStopSwitch) {
             let HKSwitchService = myMowerAccessory.getServiceById(
@@ -257,6 +264,11 @@ myAutoMowerPlatform.prototype = {
                 'SwitchService' + mowerName
               );
               HKSwitchService.subtype = 'SwitchService' + mowerName;
+              HKSwitchService.addOptionalCharacteristic(Characteristic.ConfiguredName);
+              HKSwitchService.setCharacteristic(
+                Characteristic.ConfiguredName,
+                'Start-Park ' + mowerName
+              );
               myMowerAccessory.addService(HKSwitchService);
             }
 
@@ -277,6 +289,11 @@ myAutoMowerPlatform.prototype = {
                 'SwitchServicePark' + mowerName
               );
               HKSwitch2Service.subtype = 'SwitchServicePark' + mowerName;
+              HKSwitch2Service.addOptionalCharacteristic(Characteristic.ConfiguredName);
+              HKSwitch2Service.setCharacteristic(
+                Characteristic.ConfiguredName,
+                'ParkUntilResume ' + mowerName
+              );
               myMowerAccessory.addService(HKSwitch2Service);
             }
 
@@ -284,21 +301,24 @@ myAutoMowerPlatform.prototype = {
             this._confirmedServices.push(HKSwitch2Service);
           }
 
-          let HKMotionService = myMowerAccessory.getServiceById(
-            mowerName + ' needs attention',
-            'MotionService' + mowerName
+          let HKFanService = myMowerAccessory.getServiceById(
+            'Start-Pause ' + mowerName,
+            'FanService' + mowerName
           );
 
-          if (!HKMotionService) {
-            this.log('INFO - Creating Motion Service ' + mowerName);
-            HKMotionService = new Service.MotionSensor(
-              mowerName + ' needs attention',
-              'MotionService' + mowerName
+          if (!HKFanService) {
+            this.log('INFO - Creating  Fan Service ' + mowerName);
+            HKFanService = new Service.Fan('Start-Pause ' + mowerName, 'FanService' + mowerName);
+            HKFanService.subtype = 'FanService' + mowerName;
+            HKFanService.addOptionalCharacteristic(Characteristic.ConfiguredName);
+            HKFanService.setCharacteristic(
+              Characteristic.ConfiguredName,
+              'Start-Pause ' + mowerName
             );
-            HKMotionService.subtype = 'MotionService' + mowerName;
-            myMowerAccessory.addService(HKMotionService);
+            myMowerAccessory.addService(HKFanService);
           }
-          this.bindMotionCharacteristic(HKMotionService);
+
+          this.bindFanOnCharacteristic(myMowerAccessory, HKFanService);
 
           this._confirmedAccessories.push(myMowerAccessory);
           this._confirmedServices.push(HKBatteryService);
